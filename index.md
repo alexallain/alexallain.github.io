@@ -53,6 +53,7 @@ really fun. I mostly play Ironclad (and yes, I can beat the heart at A20). Nowad
 multiplayer with friends or while traveling.
 * Powerlifting - I've been lifting for roughly the last 9 years (since early 2017) and now have a home gym that is
  delightful. Deadlifts are my favorite lift.
+* Rooting for the New Orleans Saints - Who Dat!
 * Running - I mostly like 5ks and shorter runs, but I've done two (extraordinarily slow) Napa Valley half marathons
 (whose course is fantastically beautiful).
 * Travel - sometimes I write about it, with Alex, at the increasingly inaccurately named <a href="https://alexandalexacrossamerica.wordpress.com/">Alex and
@@ -64,7 +65,7 @@ Alex Across America</a>
 Some random facts about myself:
 * I've been a vegetarian since 2001.
 * I'm from New Orleans originally, and spent ten years in the greater Boston area, so I've now lived a tricoastal life.
-* On Fridays, I wear Hawaiian shirts (usually, New Orleans Jazz Fest shirt)
+* On Fridays, I wear Hawaiian shirts (usually, a New Orleans Jazz Fest shirt)
 
 I live in the wonderful city of San Francisco with my lovely partner, who is also named Alex, and our extremely docile cat, Ellie. 
 
