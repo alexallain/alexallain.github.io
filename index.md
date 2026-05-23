@@ -48,7 +48,7 @@ href="https://www.crosswordtournament.com/info/history.htm">2010</a>.
 * Piano - I started learning piano in January 2025 because I didn't understand music at all, and I thought it
 would be another fun skill to get good at. Turns out it's really fun, and also a great way to understand more about
 how music works.
-* Slay the Spire (and StS 2) - I've spent an embarassing amount of time playing StS but it is
+* Slay the Spire (and StS 2) - I've spent an embarrassing amount of time playing StS but it is
 really fun. I mostly play Ironclad (and yes, I can beat the heart at A20). Nowadays I try to limit this to either StS 2
 multiplayer with friends or while traveling.
 * Powerlifting - I've been lifting for roughly the last 9 years (since early 2017) and now have a home gym that is
