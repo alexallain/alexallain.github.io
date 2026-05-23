@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+{%- include head.html -%}
+<body>
+  <header class="site-header">
+    <nav>
+      <a href="{{ '/' | relative_url }}" class="site-title">{{ site.title }}</a>
+      <a href="{{ '/blog/' | relative_url }}">Writing</a>
+    </nav>
+  </header>
+  <main class="content">
+    {{ content }}
+  </main>
+  {%- include footer.html -%}
+</body>
+</html>
