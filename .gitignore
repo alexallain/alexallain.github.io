@@ -6,3 +6,9 @@ vendor/
 .bundle/
 node_modules/
 .DS_Store
+
+# Editor swap/temp files
+*.swp
+*.swo
+*~
+.#*

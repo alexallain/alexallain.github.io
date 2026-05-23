@@ -6,6 +6,7 @@ permalink: /blog/
 
 # Writing
 
+{% if site.posts.size > 0 %}
 <ul class="post-list">
   {% for post in site.posts %}
     <li>
@@ -14,3 +15,6 @@ permalink: /blog/
     </li>
   {% endfor %}
 </ul>
+{% else %}
+Nothing here yet — soon.
+{% endif %}
