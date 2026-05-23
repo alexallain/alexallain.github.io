@@ -66,6 +66,8 @@ Some random facts about myself:
 * I've been a vegetarian since 2001.
 * I'm from New Orleans originally, and spent ten years in the greater Boston area, so I've now lived a tricoastal life.
 * On Fridays, I wear Hawaiian shirts (usually, a New Orleans Jazz Fest shirt)
+* I am into the concept of spaced repetition learning and have been using SuperMemo for over a decade. I'm pretty sure I
+remember more stuff I want to as a result.
 
 I live in the wonderful city of San Francisco with my lovely partner, who is also named Alex, and our extremely docile cat, Ellie. 
 
