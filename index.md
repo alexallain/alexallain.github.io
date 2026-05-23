@@ -61,6 +61,11 @@ Alex Across America</a>
 * Reading, in general, though especially anything written by Robert Caro. (Greg Egan is also quite good.)
 * Writing, in theory, though I don't do that much of it these days. I want to experiment with doing more of it here.
 
+Some random facts about myself:
+* I've been a vegetarian since 2001.
+* I'm from New Orleans originally, and spent ten years in the greater Boston area, so I've now lived a tricoastal life.
+* On Fridays, I wear Hawaiian shirts (usually, New Orleans Jazz Fest shirt)
+
 I live in the wonderful city of San Francisco with my lovely partner, who is also named Alex, and our extremely docile cat, Ellie. 
 
 I believe San Francisco still largely under-rated for its natural beauty, mild weather, access to nature, quirky
