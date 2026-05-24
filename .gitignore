@@ -12,3 +12,6 @@ node_modules/
 *.swo
 *~
 .#*
+
+# Drafts are local-only and never committed (no backup — keep copies elsewhere if a draft matters)
+_drafts/
