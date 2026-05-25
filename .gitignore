@@ -14,4 +14,7 @@ node_modules/
 .#*
 
 # Drafts are local-only and never committed (no backup — keep copies elsewhere if a draft matters)
-_drafts/
+# Pattern: ignore contents of _drafts/, but negate the template so it stays tracked.
+# (Negation only works if the parent directory itself isn't fully ignored.)
+_drafts/*
+!_drafts/_template.md
