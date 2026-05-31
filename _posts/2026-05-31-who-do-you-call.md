@@ -37,18 +37,22 @@ So clearly these tools would have helped USDR's internal operations.
 
 But how does this help governments?
 
-Do we have a new answer to "who do you call?" I admit that I think today the answer is no. It seems like Claude
-Code is still a bit too esoteric for a non-technical user (I've helped a few folks get it set up, and it's illuminating
-to see all the places--like, say, getting started with the terminal--that feel unnatural to people who aren't
-developers.) To me this makes it pretty clear that Claude Code, today, doesn't solve this problem directly because so
-many of the problems we solved at USDR required helping people overcome smaller barriers than that to using tools
-productively. (Think: something like setting up Outlook email automations.)
+Do we have a new answer to "who do you call?" I admit that I think today the answer (for most of the folks USDR worked
+with) is no. It seems like Claude Code is still a bit too esoteric for a non-technical user (I've helped a few folks get
+it set up, and it's illuminating to see all the places--like, say, getting started with the terminal--that feel
+unnatural to people who aren't developers.) To me this makes it pretty clear that Claude Code, today, doesn't solve this
+problem directly because so many of the problems we solved at USDR required helping people overcome smaller barriers
+than that to using tools productively. (Think: something like setting up Outlook email automations.)
 
 The usability gap feels a little bit like the usability jump from 'raw database' to Airtable. Something that feels small
 in principle, but that makes a huge difference in accessibility by getting a lot of little UX details right (ex:
 Airtable feels like a spreadsheet, which many more people are familiar with, and then just gently layers in cross-table
 references with an intuitive UI that makes it feel natural). It wouldn't be surprising to see these gaps close--but they
 do need to be closed.
+
+Of course the situation is probably different for governments with a technical team on staff--in those cases, I think
+the potential for delivering more significant but maintainable solutions is higher, but there are just not as many of
+those, and they're already relatively well resourced.
 
 That leaves another potential path in the immediate term: commit to owning the maintenance for more projects because
 the tools increase your technical capacity to do so.
