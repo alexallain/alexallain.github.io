@@ -1,0 +1,8 @@
+Switch post URLs from dated paths to /writing/:title/
+
+Change permalink from /:year/:month/:day/:title/ to /writing/:title/ and
+move the index page from /blog/ to /writing/ (nav and homepage links
+updated to match). Add jekyll-redirect-from and redirect every old dated
+URL (and /blog/) to its new location so existing links don't break.
+
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>

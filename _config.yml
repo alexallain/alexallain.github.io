@@ -7,7 +7,7 @@ description: >-
 url: https://alexallain.github.io
 baseurl: ""
 
-permalink: /:year/:month/:day/:title/
+permalink: /writing/:title/
 
 markdown: kramdown
 highlighter: rouge
@@ -16,6 +16,7 @@ plugins:
   - jekyll-feed
   - jekyll-seo-tag
   - jekyll-sitemap
+  - jekyll-redirect-from
 
 exclude:
   - Gemfile

@@ -92,5 +92,5 @@ You can reach me at [alex.allain@gmail.com](mailto:alex.allain@gmail.com).
   {% endfor %}
 </ul>
 
-[All posts →]({{ "/blog/" | relative_url }})
+[All posts →]({{ "/writing/" | relative_url }})
 {% endif %}

@@ -2,6 +2,8 @@
 layout: post
 title: "Stickerables"
 date: 2026-05-25
+redirect_from:
+  - /2026/05/25/stickerables/
 ---
 Lots of companies have formal company values, and they can be useful. Among other things, it's helpful to be clear on
 what you are trying to be as an organization. On the other hand, one of Enron's four company values was Integrity.

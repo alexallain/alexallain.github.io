@@ -1,7 +1,9 @@
 ---
 layout: default
 title: Writing
-permalink: /blog/
+permalink: /writing/
+redirect_from:
+  - /blog/
 ---
 
 # Writing
