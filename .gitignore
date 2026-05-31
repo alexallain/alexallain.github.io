@@ -13,6 +13,9 @@ node_modules/
 *~
 .#*
 
+# Temp file used for multi-line commit messages
+.commit-msg
+
 # Drafts are local-only and never committed (no backup — keep copies elsewhere if a draft matters)
 # Pattern: ignore contents of _drafts/, but negate the template so it stays tracked.
 # (Negation only works if the parent directory itself isn't fully ignored.)
