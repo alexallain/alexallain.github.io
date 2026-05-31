@@ -4,7 +4,7 @@ author:
   email: alex.allain@gmail.com
 description: >-
   Personal site and writing by Alex Allain.
-url: https://alexallain.github.io
+url: https://alexallain.com
 baseurl: ""
 
 permalink: /writing/:title/
