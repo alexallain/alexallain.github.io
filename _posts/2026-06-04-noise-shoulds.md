@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Noise Shoulds" 
+title: "Noise shoulds"
 date: 2026-06-04
 ---
 Something I think about a lot is the prisons that we create for ourselves. They come in many forms--imaginary
