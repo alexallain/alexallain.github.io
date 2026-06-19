@@ -34,6 +34,6 @@ regular team or team lead wide meetings, and so everyone could see we took it se
 also would post the principles in Slack every time we had a four day week, which also helped a lot in creating
 awareness--but the key to it sticking in the culture is doing visible things.)
 
-I'm not sure how easily this can be imported into an existing organization since so much work is cross-team at larger
+I'm not sure how easily this can be imported piecemeal into an existing organization since so much work is cross-team at larger
 orgs, but for a smaller org, I think getting it seeded into the culture early seems like a net quality of life win. It
 was for us at USDR for sure--it made my four day weeks significantly less stressful!
