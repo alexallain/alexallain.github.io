@@ -8,7 +8,7 @@ permalink: /projects/
 
 <ul class="post-list">
   <li>
-    <a href="{{ '/projects/rhythm-machine/' | relative_url }}">Rhythm Machine</a> is a tool for helping me practice
+    <a href="{{ '/projects/rhythm-machine/' | relative_url }}">Rhythm Machine</a> A tool for helping me practice
 tricky rhythms like a triplet followed by a quintuplet. It's entirely built by Claude Code.
   </li>
 </ul>
