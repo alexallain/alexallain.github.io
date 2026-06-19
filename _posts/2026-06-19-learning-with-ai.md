@@ -21,7 +21,7 @@ okay I am going to work through the CR feedback here: https://github.com/<redact
 
 I found this prompt worked very well for making sure I really understood what was going on in that code review--although
 Claude got over-eager and decided to find possible ambiguity in everything I said, even when there really wasn't any. Ah
-well.
+well, I guess I taught it to be a lawyer.
 
 The second is having Claude build interactive explainers for concepts. I'm not 100% certain how good an idea this is, in
 the sense that I think that if it replaces me just drawing diagrams myself, it's probably a bad idea. But I think it's a
