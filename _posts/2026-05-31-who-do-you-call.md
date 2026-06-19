@@ -72,3 +72,9 @@ So I am not sure that it gets you necessarily a 10x scaling factor for the numbe
 like that--but it might get you 1.5 or 2x, and I think that could be pretty promising! And if that's 1.5 or 2x now, it
 sure feels tantalizingly close to a lot more as the tools get better. So maybe, one day, the answer to who do you call
 when it breaks will be: Claude!
+
+Update on 6/18/2026: Anthropic recently [released a report](https://www.anthropic.com/research/claude-code-expertise)
+that shows (basically) that agentic coding sessions are most successful when run by a domain expert in the problem being
+solved (rather than by a software engineer). This seems like another valuable data point in this discussion. (That said,
+there's a lot more detail that would be necessary to know if the *specific kinds of sessions* that are relevant to my
+thesis are handled well by Claude Code.)
