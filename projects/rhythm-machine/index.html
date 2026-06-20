@@ -300,6 +300,17 @@ function ensureAudio() {
   return audioCtx;
 }
 
+// Keep the screen awake while running so the phone doesn't dim/sleep mid-practice.
+let wakeLock = null;
+async function requestWakeLock() {
+  try {
+    if ("wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen");
+  } catch (e) { /* unsupported, or denied (e.g. low battery) — degrade silently */ }
+}
+function releaseWakeLock() {
+  if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+}
+
 // Base frequencies & gains per accent level: 0=subdivision, 1=beat, 2=downbeat.
 const LEVELS = {
   0: { freq: 480,  gain: 0.6  },
@@ -549,6 +560,7 @@ function start() {
   scheduler();
   requestAnimationFrame(draw);
   setPlayButton(true);
+  requestWakeLock();
 }
 
 function stop() {
@@ -564,6 +576,7 @@ function stop() {
   setPlayButton(false);
   document.getElementById("meta").textContent = metaSummary();
   if (claps.length) computeSummary(); // report the run that just finished
+  if (!playingBack) releaseWakeLock();
 }
 
 /* ───────────────────────── Visualizer ───────────────────────── */
@@ -825,6 +838,7 @@ function playbackComparison() {
   document.getElementById("results").classList.add("show");
 
   setPlaybackButton(true);
+  requestWakeLock();
   requestAnimationFrame(playbackDraw);
   playbackTimer = setTimeout(stopPlayback, (measures * measureDur + 0.4) * 1000);
 }
@@ -855,6 +869,7 @@ function stopPlayback() {
   document.getElementById("playhead").style.left = "0";
   document.querySelectorAll(".tl-note.active").forEach(n => n.classList.remove("active"));
   setPlaybackButton(false);
+  if (!isPlaying) releaseWakeLock();
 }
 
 
@@ -945,6 +960,11 @@ document.getElementById("restart").addEventListener("click", restart);
 // Warm up / unlock audio on the first interaction anywhere (esp. iOS Safari).
 ["touchend", "mousedown", "keydown"].forEach(evt =>
   window.addEventListener(evt, () => ensureAudio(), { once: true }));
+
+// The OS drops the wake lock when the tab is hidden; re-acquire it on return.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && (isPlaying || playingBack)) requestWakeLock();
+});
 
 const tempoEl = document.getElementById("tempo");
 tempoEl.addEventListener("input", () => {
