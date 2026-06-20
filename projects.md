@@ -8,9 +8,10 @@ permalink: /projects/
 
 <ul class="post-list">
   <li>
-    <a href="{{ '/projects/matmul-proof-explorer/' | relative_url }}">Matmul Proof Explorer</a> A tool I built to help
-explain how we used techniques from zero knowledge proofs to prove a matrix multiply efficiently, as part of my work on
-proving an LLM inference end-to-end at the Field Extension Institute.
+    <a href="{{ '/projects/matmul-proof-explorer/' | relative_url }}">Matmul Proof Explorer</a> A tool I had Claude
+build that explains how we used techniques from zero knowledge proofs to prove a matrix multiply efficiently, as part
+of my work on proving an LLM inference end-to-end at the Field Extension Institute. (Entirely authored by Claude with a
+lot of editorial feedback from me.)
   </li>
   <li>
     <a href="{{ '/projects/rhythm-machine/' | relative_url }}">Rhythm Machine</a> A tool for helping me practice
