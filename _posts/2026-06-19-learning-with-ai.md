@@ -27,7 +27,8 @@ The second is having Claude build interactive explainers for concepts. I'm not 1
 the sense that I think that if it replaces me just drawing diagrams myself, it's probably a bad idea. But I think it's a
 good idea where there is some concept for which drawing the diagram would be challenging and a sophisticated
 visualization would be useful. For example, I was recently working on some fancy cryptography concepts, and I spent a
-weekend having Claude build an interactive explainer of all the ideas. This was very useful. That said, part of what
+weekend having Claude build an interactive explainer of all the ideas. (You can try it out [here]({{ '/projects/matmul-proof-explorer/' | relative_url }}) if you want to learn
+how to cryptographically prove a matrix multiply!) This was very useful. That said, part of what
 made it useful was the *interactivity of building the tool*--I'd try it, still be confused by something, and then ask
 Claude to refine it in some way. Or I'd consider what it would take to make it really clear to someone who didn't have
 quite as good an understanding of the idea as I now had, and ask Claude to update the explainer.
