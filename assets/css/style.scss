@@ -115,6 +115,35 @@ ul.post-list time {
   white-space: nowrap;
 }
 
+ul.project-list {
+  list-style: none;
+  padding: 0;
+  margin: 2rem 0;
+}
+
+ul.project-list li {
+  padding: 1.25rem 0;
+  border-bottom: 1px dotted var(--rule);
+}
+
+ul.project-list li:last-child { border-bottom: none; }
+
+ul.project-list .project-title {
+  display: inline-block;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--fg);
+  text-decoration: none;
+  margin-bottom: 0.35rem;
+}
+
+ul.project-list .project-title:hover { color: var(--accent); }
+
+ul.project-list p {
+  margin: 0;
+  color: var(--fg-muted);
+}
+
 .post-header { margin-bottom: 2rem; }
 .post-header h1 { margin-bottom: 0.25rem; }
 .post-header time {

@@ -6,15 +6,16 @@ permalink: /projects/
 
 # Projects
 
-<ul class="post-list">
+<ul class="project-list">
   <li>
-    <a href="{{ '/projects/matmul-proof-explorer/' | relative_url }}">Matmul Proof Explorer</a> A tool I had Claude
-build that explains how we used techniques from zero knowledge proofs to prove a matrix multiply efficiently, as part
-of my work on proving an LLM inference end-to-end at the Field Extension Institute. (Entirely authored by Claude with a
-lot of editorial feedback from me.)
+    <a class="project-title" href="{{ '/projects/matmul-proof-explorer/' | relative_url }}">Matmul Proof Explorer</a>
+    <p>A tool I had Claude build that explains how we used techniques from zero knowledge proofs to prove a matrix
+multiply efficiently, as part of my work on proving an LLM inference end-to-end at the Field Extension Institute.
+(Entirely authored by Claude Code with a lot of editorial feedback from me.)</p>
   </li>
   <li>
-    <a href="{{ '/projects/rhythm-machine/' | relative_url }}">Rhythm Machine</a> A tool for helping me practice
-tricky rhythms like a triplet followed by a quintuplet. It's entirely built by Claude Code.
+    <a class="project-title" href="{{ '/projects/rhythm-machine/' | relative_url }}">Rhythm Machine</a>
+    <p>A tool for helping me practice tricky rhythms like a triplet followed by a quintuplet. It's entirely built by
+Claude Code.</p>
   </li>
 </ul>
