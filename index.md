@@ -28,7 +28,8 @@ of COVID-19). Learned a lot about how government worked.
 * Dropbox, where I worked on Dropbox Business, a bunch of developer infrastructure, hiring and career processes, and
 tried to start a product incubator. Learned a lot about management and scaling organizations.
 * Wrote Jumping into C++, which a lot of people have found useful for learning to program. Through a particular quirk of
-my approach to the writing process, I was able to write it quite quickly in wall clock terms (about 80 hours).
+my approach to the writing process, I was able to write it quite quickly in wall clock terms (about [200 hours
+total](https://medium.com/did-you-know-the-journal-blog/ten-minutes-a-day-e2fa1084f924)).
 * Liquid Machines, where I worked a lot on interesting low level reverse engineering and also wrote a pretty neat
 programming language. We got acquired by Check Point software, where I worked on slightly less interesting integration
 work.
