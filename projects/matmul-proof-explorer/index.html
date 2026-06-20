@@ -1,0 +1,2317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matmul Proof Explorer — From Matrices to Zero-Knowledge</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300;1,9..144,400&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+  :root {
+    --bg: #f6f6f3;
+    --bg-card: #ffffff;
+    --border: #e1e1e6;
+    --border-bright: #c6c6d2;
+    --text: #34343e;
+    --text-dim: #6b6b78;
+    --text-bright: #16161d;
+    --accent-cyan: #0e7490;
+    --accent-orange: #c2410c;
+    --accent-green: #15803d;
+    --accent-pink: #a85476;
+    --accent-purple: #6d4aa8;
+    --accent-red: #dc2626;
+    --glow-cyan: 0 0 12px rgba(14,116,144,0.22);
+    --glow-orange: 0 0 12px rgba(194,65,12,0.20);
+    --glow-green: 0 0 12px rgba(21,128,61,0.20);
+    --chalk: rgba(0,0,0,0.018);
+    --font-display: 'Fraunces', Georgia, serif;                  /* hero & section titles */
+    --font-body: 'Inter', system-ui, -apple-system, sans-serif;  /* body, subheads, UI labels */
+    --font-mono: 'JetBrains Mono', monospace;                    /* code, equations, numeric data */
+    --font-ui: var(--font-body);  /* UI labels share the sans body font */
+    /* Type scale — three small steps replace the old 10/11/12/13/14/15px sprawl */
+    --fs-sm: 0.9375rem;     /* 15px — secondary text, equations, tables, mono data */
+    --fs-xs: 0.8125rem;     /* 13px — UI labels, captions, nav, h3 */
+    --fs-eyebrow: 0.75rem;  /* 12px — section labels, badges, status pills */
+    /* Letter-spacing — two tokens for uppercase labels (was five values) */
+    --track-tight: 0.08em;  /* nav, h3, buttons, matrix labels, round numbers */
+    --track-wide: 0.14em;   /* section eyebrows and badges */
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 17px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* Chalk texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 2px, var(--chalk) 2px, var(--chalk) 3px),
+      repeating-linear-gradient(90deg, transparent, transparent 3px, var(--chalk) 3px, var(--chalk) 4px);
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(246,246,243,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex; align-items: center; height: 52px; gap: 1.5rem;
+    font-family: var(--font-ui); font-size: var(--fs-xs);
+    letter-spacing: var(--track-tight); text-transform: uppercase;
+  }
+  nav .logo { color: var(--accent-cyan); font-weight: 600; font-size: var(--fs-xs); white-space: nowrap; margin-right: 1rem; }
+  nav a { color: var(--text-dim); text-decoration: none; padding: 0.3rem 0; transition: color 0.2s; white-space: nowrap; }
+  nav a:hover, nav a.active { color: var(--accent-cyan); }
+  nav a.active { border-bottom: 2px solid var(--accent-cyan); }
+  .nav-progress { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+  .nav-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: all 0.3s; }
+  .nav-dot.done { background: var(--accent-green); box-shadow: var(--glow-green); }
+  .nav-dot.current { background: var(--accent-cyan); box-shadow: var(--glow-cyan); }
+
+  /* SECTIONS */
+  section {
+    padding: 80px 2rem 4rem;
+    max-width: 1100px; margin: 0 auto; position: relative;
+  }
+  .section-label {
+    font-family: var(--font-ui); font-size: var(--fs-eyebrow);
+    letter-spacing: var(--track-wide); text-transform: uppercase;
+    color: var(--accent-cyan); margin-bottom: 0.5rem;
+    display: flex; align-items: center; gap: 0.8rem;
+  }
+  .section-label::before {
+    content: ''; display: block; width: 24px; height: 1px; background: var(--accent-cyan);
+  }
+
+  /* Section title (every section) — a clear step below the hero/page title */
+  h1 {
+    font-family: var(--font-display); font-size: clamp(1.75rem, 3.5vw, 2.3rem);
+    font-weight: 300; color: var(--text-bright); line-height: 1.2; margin-bottom: 1.5rem;
+  }
+  h1 em { font-style: italic; color: var(--accent-orange); }
+  /* Hero is the one true display title */
+  #hero h1 { font-size: clamp(2.4rem, 5.5vw, 3.25rem); }
+  h2 { font-family: var(--font-display); font-size: 1.5rem; font-weight: 400; color: var(--text-bright); margin-bottom: 1rem; }
+  /* Subhead — serif like the other headings, larger than body so it actually organizes text */
+  h3 {
+    font-family: var(--font-body); font-size: 1.25rem; font-weight: 600;
+    color: var(--accent-orange); margin-bottom: 0.4rem; line-height: 1.3;
+  }
+  p { margin-bottom: 1rem; max-width: 680px; }
+  .lead { font-size: 1.2rem; color: var(--text-bright); max-width: 620px; margin-bottom: 2rem; }
+
+  code, .mono {
+    font-family: var(--font-mono); font-size: 0.88em;
+    background: rgba(0,212,255,0.08); padding: 0.1em 0.4em;
+    border-radius: 3px; color: var(--accent-cyan);
+  }
+
+  /* Inline math — mono font, visually distinct from body serif */
+  .m {
+    font-family: var(--font-mono); font-size: 0.88em;
+    color: var(--text-bright);
+  }
+
+  /* CARDS */
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1.5rem; margin: 1.5rem 0;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  }
+  .card:hover { border-color: var(--border-bright); box-shadow: 0 8px 24px rgba(15,23,42,0.08); transform: translateY(-2px); }
+
+  /* SANDBOX */
+  .sandbox {
+    background: var(--bg-card); border: 1px solid var(--accent-cyan);
+    border-radius: 10px; padding: 1.5rem; margin: 2rem 0; position: relative; overflow: hidden;
+    box-shadow: 0 6px 28px rgba(14,116,144,0.08);
+  }
+  .sandbox::before {
+    content: 'INTERACTIVE'; position: absolute; top: 0; right: 0;
+    background: var(--accent-cyan); color: var(--bg);
+    font-family: var(--font-ui); font-size: var(--fs-eyebrow); font-weight: 600;
+    letter-spacing: var(--track-wide); padding: 3px 12px; border-radius: 0 7px 0 6px;
+  }
+  .sandbox h3 { color: var(--accent-cyan); }
+
+  /* MATRIX DISPLAY */
+  .matrix-container { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; justify-content: center; margin: 1rem 0; }
+  .matrix { display: inline-grid; gap: 2px; padding: 6px; position: relative; background: transparent; }
+  .matrix::before, .matrix::after {
+    content: ''; position: absolute; top: 0; bottom: 0; width: 3px;
+    background: var(--accent-cyan); border-radius: 2px; opacity: 0.6;
+  }
+  .matrix::before { left: -2px; }
+  .matrix::after { right: -2px; }
+  .matrix.orange::before, .matrix.orange::after { background: var(--accent-orange); }
+  .matrix.green::before, .matrix.green::after { background: var(--accent-green); }
+  .matrix.pink::before, .matrix.pink::after { background: var(--accent-pink); }
+
+  .matrix-cell {
+    width: 48px; height: 36px; display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--text-bright);
+    background: rgba(0,212,255,0.05); border-radius: 3px; transition: all 0.2s;
+  }
+  .matrix-cell input {
+    width: 100%; height: 100%; background: transparent;
+    border: 1px solid var(--border); border-radius: 3px;
+    color: var(--text-bright); font-family: var(--font-mono);
+    font-size: var(--fs-sm); text-align: center; outline: none; transition: border-color 0.2s;
+  }
+  .matrix-cell input:focus { border-color: var(--accent-cyan); }
+  .matrix-label { font-family: var(--font-ui); font-size: var(--fs-xs); text-align: center; color: var(--text-dim); margin-top: 4px; letter-spacing: var(--track-tight); }
+  .op-symbol { font-family: var(--font-body); font-size: 1.5rem; color: var(--text-dim); padding: 0 0.3rem; }
+
+  /* BUTTONS */
+  button, .btn {
+    font-family: var(--font-ui); font-size: var(--fs-xs); letter-spacing: var(--track-tight);
+    text-transform: uppercase; padding: 8px 18px;
+    border: 1px solid var(--accent-cyan); background: transparent;
+    color: var(--accent-cyan); border-radius: 4px; cursor: pointer; transition: all 0.2s;
+  }
+  button:hover { background: rgba(0,212,255,0.1); box-shadow: var(--glow-cyan); }
+  button.primary { background: var(--accent-cyan); color: var(--bg); font-weight: 600; }
+  button.primary:hover { background: #0a5e74; }
+  button.orange { border-color: var(--accent-orange); color: var(--accent-orange); }
+  button.orange:hover { background: rgba(255,136,68,0.1); box-shadow: var(--glow-orange); }
+  button.green { border-color: var(--accent-green); color: var(--accent-green); }
+  button.green:hover { background: rgba(68,255,136,0.1); box-shadow: var(--glow-green); }
+
+  /* EXERCISE BOX */
+  .challenge {
+    background: linear-gradient(135deg, rgba(194,65,12,0.07), rgba(168,84,118,0.06));
+    border: 1px solid var(--accent-orange); border-radius: 8px; padding: 1.5rem; margin: 2rem 0; position: relative;
+  }
+  .challenge::before {
+    content: 'EXERCISE';
+    font-family: var(--font-ui); font-size: var(--fs-eyebrow); font-weight: 600;
+    letter-spacing: var(--track-wide); color: var(--accent-orange); display: block; margin-bottom: 0.8rem;
+  }
+  .challenge p { color: var(--text-bright); }
+
+
+  .reveal-content {
+    display: none; margin-top: 0.8rem; padding: 0.8rem 1rem; border-radius: 6px;
+    font-size: var(--fs-sm); line-height: 1.5;
+    background: rgba(68,255,136,0.08); border-left: 3px solid var(--accent-green); color: var(--accent-green);
+  }
+  .reveal-content.show { display: block; }
+
+  /* EQUATION */
+  .equation {
+    font-family: var(--font-mono); font-size: var(--fs-sm);
+    background: rgba(15,23,42,0.04); padding: 1.1rem 1.5rem; border-radius: 8px;
+    border-left: 3px solid var(--accent-purple); margin: 1.25rem 0;
+    overflow-x: auto; white-space: pre-wrap; color: var(--text-bright); line-height: 1.9;
+  }
+  /* Consistent subscript/superscript sizing everywhere */
+  sub, sup { font-size: 0.8em; vertical-align: baseline; position: relative; }
+  sub { top: 0.3em; }
+  sup { top: -0.5em; }
+
+  /* Hover tooltip */
+  .has-tooltip { position: relative; border-bottom: 1px dotted var(--accent-cyan); cursor: help; }
+  .has-tooltip .tooltip {
+    display: none; position: absolute; bottom: 100%; left: 0;
+    background: var(--bg-card); border: 1px solid var(--accent-cyan); border-radius: 6px;
+    padding: 0.6rem 0.8rem; font-family: var(--font-body); font-size: var(--fs-xs);
+    color: var(--text); line-height: 1.5; width: 320px; z-index: 10;
+    box-shadow: 0 4px 16px rgba(15,23,42,0.14);
+  }
+  .has-tooltip:hover .tooltip { display: block; }
+  .eq-highlight { color: var(--accent-cyan); font-weight: 600; }
+  .eq-orange { color: var(--accent-orange); font-weight: 600; }
+  .eq-green { color: var(--accent-green); font-weight: 600; }
+  .eq-pink { color: var(--accent-pink); font-weight: 600; }
+
+  /* SUMCHECK ROUNDS */
+  .round-display { display: flex; flex-direction: column; gap: 0.8rem; margin: 1rem 0; }
+  .round { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; transition: all 0.3s; }
+  .round.active { opacity: 1; border-color: var(--accent-cyan); }
+  .round-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+  .round-num { font-family: var(--font-ui); font-size: var(--fs-eyebrow); letter-spacing: var(--track-tight); text-transform: uppercase; color: var(--accent-cyan); }
+  .round-status { font-family: var(--font-ui); font-size: var(--fs-eyebrow); padding: 2px 8px; border-radius: 3px; }
+  .round-status.pass { background: rgba(68,255,136,0.15); color: var(--accent-green); }
+  .round-status.fail { background: rgba(220,38,38,0.13); color: var(--accent-red); }
+
+
+  /* HYPERCUBE TABLE */
+  .hypercube-table { font-family: var(--font-mono); font-size: var(--fs-sm); border-collapse: collapse; }
+  .hypercube-table th { padding: 4px 10px; color: var(--accent-purple); font-weight: 400; border-bottom: 1px solid var(--border); text-align: center; }
+  .hypercube-table td { padding: 5px 10px; text-align: center; border-bottom: 1px solid rgba(0,0,0,0.07); transition: all 0.3s; }
+  .hypercube-table tr.selected td { background: rgba(0,212,255,0.1); color: var(--accent-cyan); }
+
+  /* RESULT BOX */
+  .result-box {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-family: var(--font-mono); font-size: 1rem;
+    padding: 0.5rem 1rem; border-radius: 6px; margin: 0.5rem 0;
+  }
+  .result-box.pass { background: rgba(68,255,136,0.1); border: 1px solid var(--accent-green); color: var(--accent-green); }
+  .result-box.fail { background: rgba(220,38,38,0.08); border: 1px solid var(--accent-red); color: var(--accent-red); }
+  .result-box.neutral { background: rgba(0,212,255,0.08); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); }
+
+  /* KEY INSIGHT */
+  .key-insight {
+    background: linear-gradient(135deg, rgba(109,74,168,0.08), rgba(14,116,144,0.05));
+    border-left: 3px solid var(--accent-purple); padding: 1.7rem 1.3rem 1.2rem;
+    margin: 1.5rem 0; border-radius: 0 8px 8px 0; font-size: var(--fs-sm);
+    position: relative;
+  }
+  .key-insight::before {
+    content: 'INSIGHT'; position: absolute; top: 0.75rem; left: 1.3rem;
+    font-family: var(--font-ui); font-size: var(--fs-eyebrow); font-weight: 600;
+    letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--accent-purple);
+  }
+  .key-insight strong { color: var(--accent-purple); }
+
+  /* LAYOUT HELPERS */
+  .hero-flow { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 2rem 0; align-items: center; }
+  .flow-chip {
+    font-family: var(--font-ui); font-size: var(--fs-xs); padding: 6px 14px;
+    border-radius: 20px; border: 1px solid var(--border);
+    color: var(--text); transition: all 0.3s; cursor: pointer; text-decoration: none;
+  }
+  .flow-chip:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+  .flow-arrow { color: var(--text-dim); font-size: 1.2rem; }
+
+  .column-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 1.5rem 0; }
+  @media (max-width: 700px) { .column-2 { grid-template-columns: 1fr; } }
+
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); margin: 2rem 0; }
+  .flex-row { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+  .flex-col { display: flex; flex-direction: column; gap: 0.5rem; }
+  .mt-1 { margin-top: 0.5rem; } .mt-2 { margin-top: 1rem; } .mt-3 { margin-top: 1.5rem; }
+  .mb-1 { margin-bottom: 0.5rem; } .mb-2 { margin-bottom: 1rem; }
+  .text-dim { color: var(--text-dim); } .text-small { font-size: var(--fs-sm); }
+  .mono-detail { font-family: var(--font-mono); font-size: var(--fs-sm); }
+  .state-box {
+    font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-dim);
+    background: rgba(0,212,255,0.04); border: 1px solid rgba(0,212,255,0.15);
+    border-radius: 4px; padding: 0.5rem 0.8rem; margin-bottom: 1.5rem;
+    line-height: 1.6;
+  }
+  .state-box strong { color: var(--accent-cyan); font-weight: 400; }
+  .val { font-family: var(--font-mono); font-weight: 600; }
+  .val.cyan { color: var(--accent-cyan); } .val.orange { color: var(--accent-orange); }
+  .val.green { color: var(--accent-green); } .val.pink { color: var(--accent-pink); }
+  .val.purple { color: var(--accent-purple); }
+
+
+  .field-input {
+    width: 80px; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 4px; color: var(--accent-cyan); font-family: var(--font-mono);
+    font-size: var(--fs-sm); padding: 4px 8px; text-align: center; outline: none;
+  }
+  .field-input:focus { border-color: var(--accent-cyan); }
+
+  .sticky-note {
+    background: rgba(200,200,216,0.06); border: 1px solid rgba(200,200,216,0.15);
+    border-radius: 6px; padding: 1rem; font-size: var(--fs-sm); color: var(--text);
+    border-left: 3px solid var(--border-bright);
+  }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  .animate-in { animation: fadeIn 0.5s ease-out forwards; opacity: 0; }
+  .delay-1 { animation-delay: 0.1s; } .delay-2 { animation-delay: 0.2s; }
+  .delay-3 { animation-delay: 0.3s; } .delay-4 { animation-delay: 0.4s; }
+
+  /* Scroll reveal — blocks rise into view as you scroll. The .reveal class is added
+     by JS only when motion is allowed, so without JS everything stays visible. */
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.22,1,0.36,1); }
+    .reveal.in-view { opacity: 1; transform: none; }
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none; width: 100%; height: 4px;
+    background: var(--border); border-radius: 2px; outline: none; margin: 0.5rem 0;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--accent-cyan); cursor: pointer; box-shadow: var(--glow-cyan);
+  }
+
+  @media (max-width: 700px) {
+    section { padding: 70px 1rem 3rem; }
+    nav { gap: 0.8rem; font-size: var(--fs-eyebrow); padding: 0 1rem; }
+    .matrix-cell { width: 38px; height: 30px; font-size: var(--fs-xs); }
+    .equation { font-size: var(--fs-xs); padding: 0.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <span class="logo">Matmul Proof Explorer</span>
+  <a href="#hero">Overview</a>
+  <a href="#sec-freivalds">Freivalds</a>
+  <a href="#sec-mle">MLE</a>
+  <a href="#sec-sumcheck">Sumcheck</a>
+  <a href="#sec-linear">LinearClaims</a>
+  <a href="#sec-pipeline">Full Pipeline</a>
+  <div class="nav-progress">
+    <div class="nav-dot" id="dot-0"></div>
+    <div class="nav-dot" id="dot-1"></div>
+    <div class="nav-dot" id="dot-2"></div>
+    <div class="nav-dot" id="dot-3"></div>
+    <div class="nav-dot" id="dot-4"></div>
+  </div>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<section id="hero" style="display:flex;flex-direction:column;justify-content:center;padding-top:52px">
+  <div class="animate-in">
+    <div class="section-label">Zero-Knowledge Proof Explorer</div>
+    <h1>How do you <em>prove</em> a matrix multiply<br>without revealing the matrices?</h1>
+    <p class="lead">
+      This interactive guide walks you through the proving stack of a real zero-knowledge system from the Field Extension Institute:
+      how a simple claim "A &times; B = C" gets transformed through four elegant protocols
+      into a compact, verifiable proof.
+    </p>
+  </div>
+
+  <div class="hero-flow animate-in delay-2">
+    <a class="flow-chip" href="#sec-freivalds">Freivalds' Check</a>
+    <span class="flow-arrow">&rarr;</span>
+    <a class="flow-chip" href="#sec-mle">Multilinear Extension</a>
+    <span class="flow-arrow">&rarr;</span>
+    <a class="flow-chip" href="#sec-sumcheck">Sumcheck Protocol</a>
+    <span class="flow-arrow">&rarr;</span>
+    <a class="flow-chip" href="#sec-linear">Linear Claims</a>
+  </div>
+
+  <div class="key-insight animate-in delay-3">
+    <strong>The core idea:</strong> Checking a full n&times;n matrix multiply is O(n&sup3;). But we can
+    probabilistically verify it in O(n&sup2;) using random challenges. Each step in this pipeline
+    further compresses the proof until we're left with a handful of "linear claims" &mdash; simple
+    statements that a committed polynomial evaluates to a specific value at a specific point.
+  </div>
+
+  <div class="card animate-in delay-4" style="max-width: 600px">
+    <h3>How to use this guide</h3>
+    <p class="text-small" style="margin-top:0.5rem">
+      Each section has three parts:<br>
+      <span class="val cyan">&bull;</span> <strong>The idea</strong> &mdash; what this step does and why<br>
+      <span class="val orange">&bull;</span> <strong>Interactive sandbox</strong> &mdash; play with real numbers<br>
+      <span class="val green">&bull;</span> <strong>Knowledge check</strong> &mdash; test if you really got it
+    </p>
+  </div>
+</section>
+
+<!-- ═══ 1: FREIVALDS ═══ -->
+<section id="sec-freivalds">
+  <div class="section-label">Step 1 of 4</div>
+  <h1>Freivalds' Check</h1>
+  <p class="lead">
+    Turn an O(n&sup3;) matrix multiplication check into an O(n&sup2;) probabilistic one
+    using a single random vector.
+  </p>
+
+  <div class="state-box">
+    <strong>Have:</strong> matrices A, B, and a claimed C<br>
+    <strong>Goal:</strong> check A&times;B = C without redoing the O(n&sup3;) multiplication
+  </div>
+
+  <h3>The Problem</h3>
+  <p>
+    A prover claims <code>A &times; B = C</code>. The naive check is to redo the multiplication &mdash;
+    but that's exactly as expensive as computing it yourself. We want the verifier to do <em>less</em> work.
+  </p>
+
+  <h3 class="mt-2">The Trick (one-sided)</h3>
+  <p>
+    Pick a random vector <span class="val orange">r</span>. Compute <code>A &times; (B &times; r)</code> and
+    compare it to <code>C &times; r</code>. If <code>A &times; B = C</code>, these must be equal.
+    If not, they'll differ with overwhelming probability.
+  </p>
+  <div class="equation"><span class="eq-highlight">A</span> &times; (<span class="eq-orange">B</span> &times; <span class="eq-pink">r</span>) &nbsp;=?&nbsp; <span class="eq-green">C</span> &times; <span class="eq-pink">r</span></div>
+  <div class="key-insight">
+    <strong>Why it works:</strong> Note that <span class="m">A(Br) &minus; Cr = (AB &minus; C)r</span>.
+    If <span class="m">AB = C</span>, this is always zero. If <span class="m">AB &ne; C</span>, then some row of <span class="m">(AB&minus;C)</span> is nonzero &mdash; say it's
+    <code>[a<sub>1</sub>, a<sub>2</sub>, ...]</code> with at least one a<sub>i</sub> &ne; 0.
+    That row dotted with r gives <code>a<sub>1</sub>r<sub>1</sub> + a<sub>2</sub>r<sub>2</sub> + ...</code>
+    &mdash; a nonzero equation in the random values. The chance that random numbers accidentally
+    satisfy a nonzero equation is at most <strong>1/|field|</strong>.
+  </div>
+  <p class="text-small text-dim">
+    <strong>What's a "field"?</strong> We work over a <em>finite field</em> &mdash; think integers modulo a large prime p,
+    where addition and multiplication wrap around. All the math on this page happens in such a field.
+    Larger field = lower error probability.
+  </p>
+
+  <h3 class="mt-2">Going further (two-sided)</h3>
+  <p>
+    One random vector collapses the <em>columns</em>. But we can also collapse the <em>rows</em>
+    by multiplying on the left by a random row vector <span class="val purple">u<sup>T</sup></span>:
+  </p>
+  <div class="equation" style="font-size:var(--fs-sm)"><span class="eq-purple">u<sup>T</sup></span> &middot; <span class="eq-highlight">A</span> &middot; <span class="eq-orange">B</span> &middot; <span class="eq-pink">v</span> &nbsp;=?&nbsp; <span class="eq-purple">u<sup>T</sup></span> &middot; <span class="eq-green">C</span> &middot; <span class="eq-pink">v</span></div>
+  <p>
+    Now both sides are <strong>scalars</strong>, not vectors. The full matrix equation has been compressed
+    to a single number comparison. This two-sided version is what the real system uses &mdash;
+    the sandbox below demonstrates both. In the next section, we'll see how polynomials give us an elegant way to generate these random vectors.
+  </p>
+
+  <div class="sandbox" id="sandbox-freivalds">
+    <h3>Try it: Freivalds' Check on 2&times;2 Matrices</h3>
+    <p class="text-small text-dim mt-1">Edit any matrix cell. The random vector auto-generates. Watch both sides compute.</p>
+
+    <div class="matrix-container mt-2">
+      <div>
+        <div class="matrix" style="grid-template-columns: repeat(2, 48px)" id="mat-A"></div>
+        <div class="matrix-label">A</div>
+      </div>
+      <span class="op-symbol">&times;</span>
+      <div>
+        <div class="matrix orange" style="grid-template-columns: repeat(2, 48px)" id="mat-B"></div>
+        <div class="matrix-label">B</div>
+      </div>
+      <span class="op-symbol">=</span>
+      <div>
+        <div class="matrix green" style="grid-template-columns: repeat(2, 48px)" id="mat-C"></div>
+        <div class="matrix-label">C (claimed)</div>
+      </div>
+    </div>
+
+    <div class="flex-row mt-2" style="justify-content:center">
+      <button id="btn-compute-c" class="primary">Compute real C = A&times;B</button>
+      <button id="btn-corrupt-c" class="orange">Corrupt one entry</button>
+      <button id="btn-new-r">New random vectors</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3 style="color:var(--accent-pink)">One-Sided Check: compare vectors</h3>
+    <div class="matrix-container">
+      <div class="flex-col" style="align-items:center">
+        <div class="matrix pink" style="grid-template-columns: 48px" id="vec-r"></div>
+        <div class="matrix-label">v (random)</div>
+      </div>
+      <div class="flex-col" style="align-items:center; min-width:200px">
+        <div class="equation" style="border-left-color:var(--accent-cyan);white-space:nowrap">A(Bv) = <span id="lhs-result" class="eq-highlight">?</span></div>
+      </div>
+      <div class="flex-col" style="align-items:center; min-width:200px">
+        <div class="equation" style="border-left-color:var(--accent-green);white-space:nowrap">Cv = <span id="rhs-result" class="eq-green">?</span></div>
+      </div>
+    </div>
+
+    <div style="text-align:center; margin-top:0.5rem">
+      <div id="freivalds-verdict" class="result-box neutral">Compute to check...</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3 style="color:var(--accent-purple)">Two-Sided Check: compare scalars (what the real system uses)</h3>
+    <p class="text-small text-dim">Dot the results above with a second random vector u &mdash; both sides collapse to a single number.</p>
+
+    <div class="matrix-container mt-1">
+      <div class="flex-col" style="align-items:center">
+        <div class="matrix" style="grid-template-columns: 48px; --accent-cyan: var(--accent-purple)" id="vec-u"></div>
+        <div class="matrix-label">u (random)</div>
+      </div>
+      <div class="flex-col" style="align-items:center; min-width:220px">
+        <div class="equation" style="border-left-color:var(--accent-cyan);white-space:nowrap">u<sup>T</sup> &middot; A(Bv) = <span id="lhs-scalar" class="eq-highlight">?</span></div>
+      </div>
+      <div class="flex-col" style="align-items:center; min-width:220px">
+        <div class="equation" style="border-left-color:var(--accent-green);white-space:nowrap">u<sup>T</sup> &middot; Cv = <span id="rhs-scalar" class="eq-green">?</span></div>
+      </div>
+    </div>
+
+    <div style="text-align:center; margin-top:0.5rem">
+      <div id="freivalds-verdict-2" class="result-box neutral">Compute to check...</div>
+    </div>
+    <p class="text-small text-dim mt-1" style="text-align:center">
+      Two random vectors &rarr; two dimensions collapsed &rarr; scalar comparison.
+    </p>
+  </div>
+
+  <div class="challenge" id="challenge-freivalds">
+    <p>
+      <strong>Try this:</strong> In the sandbox above, click "Compute real C = A&times;B" to get the correct C.
+      Then manually edit one entry of C, changing it by just 1 (e.g., 19 &rarr; 20).
+      Now click "New random vectors" several times. How often does Freivalds catch the error?
+    </p>
+    <p>
+      Before revealing the answer: does the <em>size</em> of the error matter? Would a bigger change be caught more reliably?
+    </p>
+    <button class="orange mt-2" onclick="this.nextElementSibling.classList.toggle('show')">Reveal answer</button>
+    <div class="reveal-content">
+      Freivalds catches it <strong>with overwhelming probability</strong> (at least 1 &minus; 1/|field|), regardless of how small the error is.
+      Even changing one entry by 1 makes <span class="m">(AB - C)</span> a nonzero matrix. The dot product of a nonzero row with a
+      random vector gives a nonzero result with probability &ge; 1 - 1/|field|. Error size and location are irrelevant &mdash;
+      the random projection treats a tiny error the same as a completely wrong matrix.
+    </div>
+  </div>
+
+
+</section>
+
+<!-- ═══ 2: MLE ═══ -->
+<section id="sec-mle">
+  <div class="section-label">Step 2 of 4</div>
+  <h1>Multilinear Extension</h1>
+  <div class="state-box">
+    <strong>Have:</strong> Freivalds reduces A&times;B=C to a scalar check using random vectors<br>
+    <strong>Goal:</strong> represent matrix data as polynomials so we can use sumcheck
+  </div>
+  <p class="lead">
+    Freivalds gave us a cheap way to check A&times;B = C. But the next protocol (sumcheck)
+    only works on <em>polynomials</em>, not matrices. So we need a way to turn matrix entries into
+    a polynomial &mdash; one that preserves the matrix multiply identity.
+  </p>
+
+  <h3>Give every entry a binary address</h3>
+  <p>
+    The sumcheck protocol (Section 3) works by peeling off one <em>binary variable</em> at a time.
+    So we need our data indexed by binary variables, not row/column numbers.
+  </p>
+  <p>
+    A 2&times;4 matrix has 8 entries. The row index is 0 or 1 (1 bit). The column index is 0&ndash;3 (2 bits).
+    So each entry has a <strong>3-bit binary address</strong>: (row, col<sub>1</sub>, col<sub>0</sub>).
+    For example, row 1, column 2 (binary 10) has address (1, 1, 0).
+  </p>
+  <p>
+    Now think of those 3 bits as coordinates in a cube &mdash; the 8 entries sit at the 8 corners
+    of a unit cube {0,1}<sup>3</sup>. This is sometimes called the "Boolean hypercube."
+  </p>
+
+  <h3 class="mt-2">Why not just use the raw values?</h3>
+  <p>
+    We have 8 values at 8 binary corners. But sumcheck needs more than a lookup table &mdash;
+    each round, the verifier picks a random challenge like r=0.6 and needs to know
+    "what is the function at x<sub>0</sub>=0.6?" A bare table of values has no answer for non-binary inputs.
+  </p>
+  <p>
+    The fix: extend the table to a polynomial that (a) matches the table at all binary corners, and
+    (b) can be evaluated at <em>any</em> input, including the verifier's random challenges.
+  </p>
+
+  <h3 class="mt-2">The Multilinear Extension (MLE)</h3>
+  <p>
+    The <strong>MLE</strong> is the <em>unique</em> polynomial with the lowest possible degree that does this.
+    "Multilinear" means degree &le; 1 in each variable &mdash; no x<sup>2</sup> terms,
+    just products of x<sub>i</sub> and (1-x<sub>i</sub>).
+    It's unique because 2<sup>k</sup> values determine exactly 2<sup>k</sup> coefficients in the multilinear basis.
+  </p>
+
+  <h3 class="mt-2">The formula</h3>
+  <p class="text-small">One term per corner. Each term is: (the value at that corner) &times; (a selector that "picks" it):</p>
+  <div class="equation" style="font-size:var(--fs-sm)">MLE(<span class="eq-highlight">x<sub>0</sub></span>,<span class="eq-highlight">x<sub>1</sub></span>,<span class="eq-highlight">x<sub>2</sub></span>) =
+
+  <span class="eq-green">f(0,0,0)</span> &middot; <span class="eq-pink">(1-x<sub>0</sub>)(1-x<sub>1</sub>)(1-x<sub>2</sub>)</span>
++ <span class="eq-green">f(0,0,1)</span> &middot; <span class="eq-pink">(1-x<sub>0</sub>)(1-x<sub>1</sub>)&middot;x<sub>2</sub></span>
++ <span class="eq-green">f(0,1,0)</span> &middot; <span class="eq-pink">(1-x<sub>0</sub>)&middot;x<sub>1</sub>&middot;(1-x<sub>2</sub>)</span>
++ <span class="eq-green">f(0,1,1)</span> &middot; <span class="eq-pink">(1-x<sub>0</sub>)&middot;x<sub>1</sub>&middot;x<sub>2</sub></span>
++ <span class="eq-green">f(1,0,0)</span> &middot; <span class="eq-pink">x<sub>0</sub>&middot;(1-x<sub>1</sub>)(1-x<sub>2</sub>)</span>
++ <span class="eq-green">f(1,0,1)</span> &middot; <span class="eq-pink">x<sub>0</sub>&middot;(1-x<sub>1</sub>)&middot;x<sub>2</sub></span>
++ <span class="eq-green">f(1,1,0)</span> &middot; <span class="eq-pink">x<sub>0</sub>&middot;x<sub>1</sub>&middot;(1-x<sub>2</sub>)</span>
++ <span class="eq-green">f(1,1,1)</span> &middot; <span class="eq-pink">x<sub>0</sub>&middot;x<sub>1</sub>&middot;x<sub>2</sub></span></div>
+  <p class="text-small text-dim">
+    <span class="val green">Green</span> = constants (the 8 data values).
+    <span class="val pink">Pink</span> = selectors built from the variables
+    <span class="val cyan">x<sub>0</sub>, x<sub>1</sub>, x<sub>2</sub></span>.
+    The pattern: where the address bit is 0, use (1-x<sub>i</sub>); where it's 1, use x<sub>i</sub>.
+  </p>
+  <div class="key-insight">
+    <strong>Why the selectors work:</strong> At corner (1,0,1), its selector is
+    <span class="val pink">x<sub>0</sub>&middot;(1-x<sub>1</sub>)&middot;x<sub>2</sub> = 1&middot;1&middot;1 = 1</span>.
+    Every <em>other</em> selector has at least one mismatched factor (e.g. f(0,0,0)'s selector has (1-x<sub>0</sub>)=0), so they vanish.
+    At a non-binary point like (0.3, 0.7, 0.5), no selector is exactly 0 or 1 &mdash; you get a weighted blend of all 8 values.
+  </div>
+
+  <h3 class="mt-2">Why this connects to Freivalds</h3>
+  <p>
+    At binary inputs, the MLE reads exact entries. At non-binary inputs, it computes
+    <strong>weighted combinations</strong> &mdash; and those weights are exactly Freivalds' random vector.
+  </p>
+  <p>
+    Consider a 2-row matrix. Evaluate its MLE at x<sub>0</sub>=0.4 (the row variable).
+    The Lagrange weights are: row 0 gets (1&minus;0.4) = <span class="val pink">0.6</span>,
+    row 1 gets <span class="val pink">0.4</span>.
+  </p>
+  <div class="equation" style="font-size:var(--fs-sm)">MLE(0.4, j) = <span class="eq-pink">0.6</span>&middot;row<sub>0</sub>[j] + <span class="eq-pink">0.4</span>&middot;row<sub>1</sub>[j] &nbsp;=&nbsp; <span class="eq-pink">[0.6, 0.4]</span> &middot; M</div>
+  <p>
+    That's multiplying by the vector <span class="val pink">u = [0.6, 0.4]</span>.
+    Choosing a random x<sub>0</sub> chooses a random u &mdash; exactly what Freivalds does.
+  </p>
+
+  <div class="sandbox" id="sandbox-mle">
+    <h3>Try it: MLE with 3 variables (8 values)</h3>
+    <p class="text-small text-dim mt-1">Edit the 8 values, then drag sliders to evaluate the MLE at any continuous point in [0,1]<sup>3</sup>.</p>
+
+    <div class="column-2 mt-2">
+      <div>
+        <h3 style="color:var(--accent-cyan)">As a 2&times;4 Matrix (row = x<sub>0</sub>, col = x<sub>1</sub>x<sub>2</sub>)</h3>
+        <p class="text-small text-dim mb-1">Think of 3 variables as: 1 for the row index (x<sub>0</sub>), 2 for the column index (x<sub>1</sub>, x<sub>2</sub>). Edit the matrix to change the MLE.</p>
+        <table style="border-collapse:collapse;font-family:var(--font-mono);font-size:var(--fs-sm);margin:0 auto">
+          <thead>
+            <tr>
+              <th style="padding:4px 6px;color:var(--text-dim)"></th>
+              <th style="padding:4px 10px;color:var(--accent-pink);font-weight:400;font-size:var(--fs-eyebrow)">x<sub>1</sub>=0,x<sub>2</sub>=0</th>
+              <th style="padding:4px 10px;color:var(--accent-pink);font-weight:400;font-size:var(--fs-eyebrow)">x<sub>1</sub>=0,x<sub>2</sub>=1</th>
+              <th style="padding:4px 10px;color:var(--accent-pink);font-weight:400;font-size:var(--fs-eyebrow)">x<sub>1</sub>=1,x<sub>2</sub>=0</th>
+              <th style="padding:4px 10px;color:var(--accent-pink);font-weight:400;font-size:var(--fs-eyebrow)">x<sub>1</sub>=1,x<sub>2</sub>=1</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding:4px 8px;color:var(--accent-purple);font-size:var(--fs-eyebrow)">x<sub>0</sub>=0</td>
+              <td style="padding:2px"><input class="field-input" id="mle-v0" type="number" value="2" style="width:50px"></td>
+              <td style="padding:2px"><input class="field-input" id="mle-v1" type="number" value="5" style="width:50px"></td>
+              <td style="padding:2px"><input class="field-input" id="mle-v2" type="number" value="3" style="width:50px"></td>
+              <td style="padding:2px"><input class="field-input" id="mle-v3" type="number" value="1" style="width:50px"></td>
+            </tr>
+            <tr>
+              <td style="padding:4px 8px;color:var(--accent-purple);font-size:var(--fs-eyebrow)">x<sub>0</sub>=1</td>
+              <td style="padding:2px"><input class="field-input" id="mle-v4" type="number" value="4" style="width:50px"></td>
+              <td style="padding:2px"><input class="field-input" id="mle-v5" type="number" value="7" style="width:50px"></td>
+              <td style="padding:2px"><input class="field-input" id="mle-v6" type="number" value="6" style="width:50px"></td>
+              <td style="padding:2px"><input class="field-input" id="mle-v7" type="number" value="8" style="width:50px"></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="text-small text-dim mt-1" style="text-align:center">
+          Fixing x<sub>0</sub> selects a row. Fixing x<sub>1</sub>,x<sub>2</sub> selects a column. Fixing all 3 reads one entry.
+        </p>
+      </div>
+      <div>
+        <h3 style="color:var(--accent-cyan)">As Hypercube Corners</h3>
+        <p class="text-small text-dim mb-1">Same 8 values, indexed by 3 binary variables:</p>
+        <div style="font-family:var(--font-mono);font-size:var(--fs-sm);line-height:1.8;padding:0.5rem;background:rgba(15,23,42,0.04);border-radius:4px">
+          <span style="color:var(--accent-purple)">x<sub>0</sub>=0:</span>
+          f(0,0,0)=<span id="mle-show-0" class="val cyan">2</span> &nbsp;
+          f(0,0,1)=<span id="mle-show-1" class="val cyan">5</span> &nbsp;
+          f(0,1,0)=<span id="mle-show-2" class="val cyan">3</span> &nbsp;
+          f(0,1,1)=<span id="mle-show-3" class="val cyan">1</span><br>
+          <span style="color:var(--accent-purple)">x<sub>0</sub>=1:</span>
+          f(1,0,0)=<span id="mle-show-4" class="val cyan">4</span> &nbsp;
+          f(1,0,1)=<span id="mle-show-5" class="val cyan">7</span> &nbsp;
+          f(1,1,0)=<span id="mle-show-6" class="val cyan">6</span> &nbsp;
+          f(1,1,1)=<span id="mle-show-7" class="val cyan">8</span>
+        </div>
+        <p class="text-small text-dim mt-1">
+          The matrix view and hypercube view are the <em>same data</em>.
+          MLE turns this into a polynomial you can evaluate anywhere in [0,1]<sup>3</sup>.
+        </p>
+      </div>
+    </div>
+
+    <div class="flex-row mt-2" style="justify-content:center; gap: 2rem; flex-wrap: wrap">
+      <div style="min-width: 300px; flex:1; max-width:400px">
+        <div class="flex-col">
+          <div>
+            <span class="val purple">x<sub>0</sub></span> = <span class="val cyan" id="mle-x0-val">0.00</span>
+            <input type="range" id="mle-x0" min="0" max="100" value="0">
+          </div>
+          <div>
+            <span class="val purple">x<sub>1</sub></span> = <span class="val cyan" id="mle-x1-val">0.00</span>
+            <input type="range" id="mle-x1" min="0" max="100" value="0">
+          </div>
+          <div>
+            <span class="val purple">x<sub>2</sub></span> = <span class="val cyan" id="mle-x2-val">0.00</span>
+            <input type="range" id="mle-x2" min="0" max="100" value="0">
+          </div>
+        </div>
+        <div class="result-box neutral mt-2" id="mle-result" style="font-size:var(--fs-sm)">MLE(0.00, 0.00, 0.00) = ?</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>Hypercube Evaluation Table</h3>
+    <p class="text-small text-dim">Each row is a vertex of {0,1}<sup>3</sup>. The weight shows how much each vertex contributes at your chosen point.</p>
+
+    <table class="hypercube-table mt-1" id="mle-table">
+      <thead><tr><th>x<sub>0</sub></th><th>x<sub>1</sub></th><th>x<sub>2</sub></th><th>f</th><th>Lagrange weight</th><th>Contribution</th></tr></thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="key-insight mt-2">
+      <strong>Try this:</strong> Set all sliders to 0 or 1 &mdash; exactly one weight becomes 1.000 (you're reading a single value).
+      Now set all to 0.50: you get the average of all 8 values. The MLE smoothly interpolates.
+      Try setting just x<sub>0</sub>=1 and leaving the others at 0: you read f(1,0,0). This is "fixing one variable."
+    </div>
+  </div>
+
+  <div class="challenge" id="challenge-mle">
+    <p>
+      <strong>Try this:</strong> In the sandbox, set x<sub>0</sub>=1.00, x<sub>1</sub>=0.00, x<sub>2</sub>=0.00.
+      Look at the Lagrange weight column &mdash; which vertex has weight 1.000? What MLE value do you get?
+    </p>
+    <p>
+      Now set all three sliders to 0.50 and look at the weights.
+      What are they, and what does the MLE value equal in terms of the 8 original values?
+    </p>
+    <button class="orange mt-2" onclick="this.nextElementSibling.classList.toggle('show')">Reveal answer</button>
+    <div class="reveal-content">
+      At (1, 0, 0): only vertex (1,0,0) has weight 1.000 &mdash; you're reading a single value directly.
+      At (0.5, 0.5, 0.5): every vertex has weight 1/8 = 0.125 &mdash; the MLE value is the <strong>average</strong> of all 8 values.
+      This is the key insight: MLE evaluation computes a weighted combination where the Lagrange weights
+      act as the coefficients. At binary points, one weight is 1 and the rest are 0 (lookup).
+      At non-binary points, you get a blend &mdash; and those blend weights are exactly the "random vector"
+      from Freivalds.
+    </div>
+  </div>
+
+  <div class="card" style="border-color: var(--accent-purple)">
+    <h3 style="color:var(--accent-purple)">Connecting the Pieces: From Freivalds to a Polynomial Sum</h3>
+    <p>
+      We just saw that MLE evaluation at a random point is the same as multiplying by a random vector.
+      The two-sided Freivalds check from Section 1 uses <em>two</em> random vectors
+      (<span class="val purple">u</span> for rows, <span class="val pink">v</span> for columns)
+      to collapse <code>A&times;B = C</code> to a scalar: <code>u<sup>T</sup>&middot;A&middot;B&middot;v = u<sup>T</sup>&middot;C&middot;v</code>.
+      With MLEs, we do exactly this &mdash; but the "random vectors" come from Lagrange weights at random evaluation points.
+    </p>
+    <p>
+      The question is: what does this look like for a larger matrix where the random vectors have more than 2 entries?
+    </p>
+
+    <h3 class="mt-2" style="color:var(--accent-purple)">Scaling up: 4&times;4 matrix</h3>
+    <p>
+      A 4&times;4 matrix has 16 entries and its MLE has 4 variables:
+      <span class="val purple">x<sub>0</sub>, x<sub>1</sub></span> for the row (4 rows = 2<sup>2</sup>) and
+      <span class="val pink">x<sub>2</sub>, x<sub>3</sub></span> for the column (4 cols = 2<sup>2</sup>).
+    </p>
+    <p>
+      To "collapse the rows," we pick <strong>two</strong> random field elements
+      <span class="val orange">c<sub>row</sub> = (r<sub>0</sub>, r<sub>1</sub>)</span> and fix x<sub>0</sub>=r<sub>0</sub>, x<sub>1</sub>=r<sub>1</sub>.
+      The Lagrange weights at (r<sub>0</sub>, r<sub>1</sub>) give the 4-element "random vector" u:
+    </p>
+    <div style="background:rgba(15,23,42,0.04);border-radius:6px;padding:1rem;margin:0.8rem 0">
+      <p class="text-small mb-1"><strong style="color:var(--accent-cyan)">Try it:</strong> drag the sliders to see how different (r<sub>0</sub>, r<sub>1</sub>) produce different "random vectors":</p>
+      <div class="flex-row" style="gap:1rem;flex-wrap:wrap">
+        <div style="min-width:140px">
+          <span class="val purple text-small">r<sub>0</sub></span> = <span class="val cyan text-small" id="bridge-r0-val">0.30</span>
+          <input type="range" id="bridge-r0" min="0" max="100" value="30" style="width:130px">
+        </div>
+        <div style="min-width:140px">
+          <span class="val purple text-small">r<sub>1</sub></span> = <span class="val cyan text-small" id="bridge-r1-val">0.70</span>
+          <input type="range" id="bridge-r1" min="0" max="100" value="70" style="width:130px">
+        </div>
+      </div>
+      <div class="equation" style="font-size:var(--fs-sm);margin:0.5rem 0" id="bridge-weights">u = [<span class="eq-purple">0.21, 0.49, 0.09, 0.21</span>]</div>
+      <p class="text-small text-dim" id="bridge-interp">Row 0 gets 21%, row 1 gets 49%, row 2 gets 9%, row 3 gets 21%</p>
+    </div>
+    <p>
+      Similarly, <span class="val orange">c<sub>col</sub> = (r<sub>2</sub>, r<sub>3</sub>)</span> fixes the column variables,
+      producing another 4-element "random vector" v. Both dimensions are now pinned &mdash;
+      exactly like <code>u<sup>T</sup>&middot;M&middot;v</code>, but expressed as MLE evaluation.
+    </p>
+    <p>
+      After pinning the row and column dimensions, the inner dimension variables remain free.
+      But why does a sum over the inner dimension appear? Recall how matrix multiplication works:
+    </p>
+    <div class="equation" style="font-size:var(--fs-sm)"><span class="eq-green">C[i, j]</span> = &sum;<sub>k</sub> <span class="eq-highlight">A[i, k]</span> &middot; <span class="eq-orange">B[k, j]</span> &nbsp;&nbsp;&nbsp; (definition of matrix multiply)</div>
+    <p>
+      The MLE of C inherits this identity: for any row/column values,
+    </p>
+    <div class="equation" style="font-size:var(--fs-sm)"><span class="eq-green">MLE<sub>C</sub>(x<sub>row</sub>, x<sub>col</sub>)</span> = &sum;<sub>k&isin;{0,1}<sup>m</sup></sub> <span class="eq-highlight">MLE<sub>A</sub>(x<sub>row</sub>, k)</span> &middot; <span class="eq-orange">MLE<sub>B</sub>(k, x<sub>col</sub>)</span></div>
+    <p>
+      This holds because both sides are multilinear polynomials that agree at every binary input
+      (where they reduce to the matrix multiply definition). By uniqueness of the MLE, they must be equal everywhere.
+    </p>
+    <p>
+      Now fix x<sub>row</sub> = c<sub>row</sub> and x<sub>col</sub> = c<sub>col</sub>. What remains is a sum over the inner dimension:
+    </p>
+    <div class="equation">&sum;<sub>j&isin;{0,1}<sup>k</sup></sub> <span class="eq-highlight">MLE<sub>A</sub>(c<sub>row</sub>, j)</span> &middot; <span class="eq-orange">MLE<sub>B</sub>(j, c<sub>col</sub>)</span> &nbsp;=&nbsp; <span class="eq-green">MLE<sub>C</sub>(c<sub>row</sub>, c<sub>col</sub>)</span></div>
+    <p>
+      This is a <strong>dot product over the inner dimension</strong> &mdash; exactly what sumcheck proves.
+    </p>
+
+    <div class="key-insight">
+      <strong>Wait &mdash; isn't this sum cheap to just compute directly?</strong>
+      For n&times;n matrices, this sum has n terms. But getting here wasn't free: pinning the row and column
+      dimensions required computing Lagrange-weighted combinations across all n&sup2; matrix entries.
+      So the prover still does O(n&sup2;) work overall. The question is: why bother with this sum formulation
+      instead of just doing Freivalds directly? The answer comes in the next section &mdash;
+      the sumcheck protocol lets a <strong>verifier</strong> check this sum
+      using only a handful of small messages, without touching the matrices at all.
+      That asymmetry (expensive prover, cheap verifier) is the whole point.
+    </div>
+
+    <p class="text-small text-dim">
+      (In the implementation, c<sub>row</sub> and c<sub>col</sub> are called <code>c1</code> and <code>c3</code> &mdash;
+      c<sub>2</sub> comes later as the sumcheck challenges for the inner dimension variables.
+      In the implementation, pinning is done by <code>scalar_mle_fix_variable</code>, applied once per variable.)
+    </p>
+  </div>
+</section>
+
+<!-- ═══ 3: SUMCHECK ═══ -->
+<section id="sec-sumcheck">
+  <div class="section-label">Step 3 of 4</div>
+  <h1>The Sumcheck Protocol</h1>
+  <p class="lead">
+    Prove that a polynomial sums to a claimed value over the Boolean hypercube,
+    one variable at a time, using only small messages.
+  </p>
+
+  <h3>The Claim</h3>
+  <div class="state-box">
+    <strong>Have:</strong> a sum &sum; MLE<sub>A</sub>&middot;MLE<sub>B</sub> = MLE<sub>C</sub> over 2<sup>k</sup> terms<br>
+    <strong>Goal:</strong> replace that exponential-size sum with a logarithmic-length transcript
+  </div>
+  <p>From the previous section, Freivalds + MLE gave us:</p>
+  <div class="equation">&sum;<sub>j&isin;{0,1}<sup>k</sup></sub> <span class="eq-highlight">MLE<sub>A</sub>(c<sub>row</sub>,j)</span> &middot; <span class="eq-orange">MLE<sub>B</sub>(j,c<sub>col</sub>)</span> &nbsp;=&nbsp; <span class="eq-green">MLE<sub>C</sub>(c<sub>row</sub>,c<sub>col</sub>)</span></div>
+  <p>
+    The right side is a single scalar (already computed). The left side sums 2<sup>k</sup> terms &mdash;
+    one for each binary assignment to the inner dimension j. Checking all terms is expensive.
+    Sumcheck lets the verifier check using only <strong>k rounds</strong>.
+  </p>
+
+  <h3 class="mt-2">How It Works</h3>
+  <p>
+    Call the left side of the claim <span class="m">f(j) = MLE<sub>A</sub>(c<sub>row</sub>, j) &middot; MLE<sub>B</sub>(j, c<sub>col</sub>)</span>.
+    We need to prove <span class="m">&sum;<sub>j</sub> f(j) = S</span> where <span class="m">S = MLE<sub>C</sub>(c<sub>row</sub>, c<sub>col</sub>)</span>.
+    The sum has 2<sup>k</sup> terms. The idea: peel off one variable of <span class="m">j</span> at a time.
+  </p>
+  <p>
+    <strong>Round 1:</strong> Instead of just asserting "the sum is <span class="m">S</span>," the prover shows how the sum
+    breaks down across the first variable <span class="m">j<sub>0</sub></span>.
+    The prover sends a polynomial <span class="m">p<sub>1</sub>(X)</span> &mdash; computed by summing <span class="m">f</span> over
+    all remaining j-variables, leaving <span class="m">j<sub>0</sub></span> free as <span class="m">X</span>.
+    The verifier checks: <span class="m">p<sub>1</sub>(0) + p<sub>1</sub>(1) = S</span>.
+    This must hold because summing over <span class="m">j<sub>0</sub> &isin; {0,1}</span> means adding the <span class="m">X</span>=0 and <span class="m">X</span>=1 cases.
+  </p>
+  <p>
+    <strong>The random challenge:</strong> The verifier now knows that <span class="m">S = p<sub>1</sub>(0) + p<sub>1</sub>(1)</span>,
+    but doesn't know if <span class="m">p<sub>1</sub></span> itself is correct. It could ask the prover to justify
+    both <span class="m">p<sub>1</sub>(0)</span> and <span class="m">p<sub>1</sub>(1)</span> as separate sub-claims &mdash;
+    but that creates two problems to verify instead of one, doubling the work each round.
+    Instead, the verifier picks a <strong>random</strong> <span class="m">r<sub>0</sub></span> and asks:
+    "justify <span class="m">p<sub>1</sub>(r<sub>0</sub>)</span>."
+    This collapses both halves into a single sub-claim. If the prover sent a fake polynomial
+    (one rigged so <span class="m">p(0)+p(1) = S</span> but otherwise wrong), the value at a random point will almost
+    certainly be wrong too &mdash; the lie can't hide at a random spot.
+  </p>
+  <p>
+    <strong>Rounds 2 through k:</strong> Same pattern. Each round, the prover sends a polynomial
+    showing how the sum breaks down across the next j-variable.
+    The verifier checks consistency with the previous round's carry-forward,
+    then picks a new random challenge. Each round pins one more variable of <span class="m">j</span>.
+  </p>
+  <p>
+    <strong>After k rounds:</strong> Every j-variable has been pinned to a random value
+    (<span class="m">r<sub>0</sub>, r<sub>1</sub>, &hellip;, r<sub>k&minus;1</sub></span>).
+    The last round's polynomial was evaluated at <span class="m">r<sub>k&minus;1</sub></span>, giving a single number.
+    To finish, the verifier must check that this number actually equals
+    <span class="m">f(r<sub>0</sub>, r<sub>1</sub>, &hellip;, r<sub>k&minus;1</sub>)</span> &mdash; the function at the fully-pinned point.
+    But <span class="m">f = MLE<sub>A</sub> &middot; MLE<sub>B</sub></span>, so the verifier needs both
+    <span class="m">MLE<sub>A</sub>(c<sub>row</sub>, r<sub>0</sub>, r<sub>1</sub>, &hellip;)</span>
+    and <span class="m">MLE<sub>B</sub>(r<sub>0</sub>, r<sub>1</sub>, &hellip;, c<sub>col</sub>)</span>
+    to multiply them and compare.
+    The problem: these MLEs are private &mdash; the verifier doesn't have the matrices.
+    So the prover <em>claims</em> values for each, and justifying those claims is the job of the next section.
+  </p>
+
+  <h3 class="mt-2">Degree Matters</h3>
+  <p>
+    Each term in the sum is <span class="m">MLE<sub>A</sub> &times; MLE<sub>B</sub></span> &mdash; a product of two
+    multilinear polynomials. Since each is degree 1 in <span class="m">j</span>, the product is degree <strong>2</strong>.
+  </p>
+  <p>
+    In the real system, a third polynomial called the <strong>mask MLE</strong> is also multiplied in.
+    It's simply <code>[1,1,...,1, 0,...,0]</code> &mdash; it selects only "real" rows and zeroes out
+    some extra rows that exist for cryptographic reasons (explained in the next section &mdash;
+    for now, just know it adds one more degree). With the mask, the total degree per variable becomes <strong>3</strong>.
+  </p>
+  <p>
+    This means each round, the prover sends <strong>4 numbers</strong> (coefficients of a degree-3 polynomial)
+    to the verifier. That's it &mdash; regardless of matrix size.
+  </p>
+
+  <div class="key-insight">
+    <strong>Fiat-Shamir:</strong> In practice there's no live verifier sending random challenges.
+    Instead, each challenge is computed by hashing all the public messages <em>so far</em> &mdash;
+    commitments, then round 1's polynomial, then round 2's, etc.
+    (This is the <em>Fiat-Shamir transform</em>.)
+    The "so far" is critical: each challenge includes the round polynomial the prover just sent.
+    If all challenges were derived from the commitments alone, the prover would know every
+    <span class="m">r<sub>i</sub></span> upfront. For each round, they could construct a separate fake polynomial:
+    they know what <span class="m">p(0) + p(1)</span> must equal (the target from the previous round)
+    and what <span class="m">p(r<sub>i</sub>)</span> must chain to (the next round's target) &mdash;
+    just define the polynomial at those points and interpolate. One fake polynomial per round,
+    bridging from a false sum down to the true final value. Every check passes.
+    By including each round's polynomial in the hash, the prover can't see <span class="m">r<sub>i</sub></span>
+    until after sending round <span class="m">i</span>'s polynomial, so they can't construct these fakes.
+  </div>
+  <div class="sticky-note mt-1">
+    <strong>At scale:</strong> For a 4096&times;4096 matmul, the Freivalds/MLE step (Section 2)
+    already pinned the row and column dimensions using <span class="m">c<sub>row</sub></span> and <span class="m">c<sub>col</sub></span>.
+    Sumcheck only runs over the <strong>inner dimension</strong>, but the mask doubles the dimension
+    (h<sub>2</sub> real entries + h<sub>2</sub> padding zeros), adding one variable.
+    That's log<sub>2</sub>(4096) + 1 = 13 rounds, each sending 4 evaluation points (degree 3 from the mask).
+    Total sumcheck proof: 52 field elements (13 &times; 4), regardless of whether the matrices have 16 million entries.
+  </div>
+  <div class="sticky-note mt-1">
+    <strong>Sumcheck complexity (general):</strong> Sumcheck over <span class="m">k</span> variables
+    (hypercube size <span class="m">n = 2<sup>k</sup></span>) with max degree <span class="m">d</span> per variable:
+    <br>&bull; <strong>Prover work:</strong> <span class="m">O(d &middot; n)</span>.
+    The prover maintains an evaluation table that halves each round:
+    <span class="m">n + n/2 + n/4 + &hellip; = 2n</span>, times <span class="m">d+1</span> evaluation points per round.
+    <br>&bull; <strong>Proof size:</strong> <span class="m">O(k &middot; d)</span> field elements &mdash;
+    one degree-<span class="m">d</span> polynomial (<span class="m">d+1</span> values) per round, for <span class="m">k</span> rounds.
+    <br>&bull; <strong>Verifier work:</strong> <span class="m">O(k &middot; d)</span> &mdash;
+    check <span class="m">d+1</span> values per round, <span class="m">k</span> rounds.
+    <br><br>
+    <strong>Why is degree a multiplier, not an exponent?</strong>
+    You might expect degree-<span class="m">d</span> to mean <span class="m">n<sup>d</sup></span> work &mdash;
+    like symbolically expanding a product of <span class="m">d</span> polynomials with <span class="m">n</span> terms each.
+    But the prover never does symbolic expansion. Instead, it keeps a separate evaluation table
+    for each factor (e.g. one table for <span class="m">A&prime;</span>, one for <span class="m">B&prime;</span>, one for <span class="m">mask</span>).
+    To evaluate <span class="m">f = A&prime; &middot; B&prime; &middot; mask</span> at a point,
+    the prover looks up each factor and multiplies &mdash; that's <span class="m">O(d)</span> per entry,
+    not <span class="m">O(n<sup>d</sup>)</span>. The degree only determines how many points to evaluate at
+    (<span class="m">d+1</span> per round), which is why it enters as a constant factor.
+    (Same idea as NTT/FFT: working in evaluation form makes polynomial multiplication pointwise and cheap,
+    whereas expanding symbolic coefficients would be quadratic or worse.)
+    <br><br>
+    In the matmul case: <span class="m">n</span> = inner dimension, <span class="m">d</span> = 3, giving ~52 proof field elements
+    and ~8n prover operations for the sumcheck portion.
+  </div>
+
+  <div class="sandbox" id="sandbox-sumcheck">
+    <h3>Try it: Sumcheck on a 3-variable polynomial</h3>
+    <p class="text-small text-dim mt-1">
+      In the protocol above, <span class="m">f(j) = MLE<sub>A</sub>(c<sub>row</sub>, j) &middot; MLE<sub>B</sub>(j, c<sub>col</sub>)</span>
+      and the prover must show <span class="m">&sum; f(j) = S</span>. Here we use a simpler <span class="m">f</span> with
+      8 values on {0,1}<sup>3</sup> to demonstrate the mechanics.
+      The protocol proves their sum in 3 rounds, one variable at a time. Watch the values reduce: 8 &rarr; 4 &rarr; 2 &rarr; 1.
+    </p>
+    <p class="text-small" style="color:var(--text-dim);font-style:italic">
+      Notice: the sandbox shows <span class="m">f</span> as a <strong>table of 8 values</strong> at binary points, not a symbolic expression.
+      This is evaluation form &mdash; the same representation the real prover uses (as discussed above).
+      But how does the prover evaluate at non-binary points like <span class="m">r<sub>0</sub>=0.4</span>?
+      It uses the multilinear property: since <span class="m">f</span> is degree 1 in each variable,
+      interpolating between the <span class="m">x<sub>0</sub>=0</span> and <span class="m">x<sub>0</sub>=1</span> entries is
+      a simple weighted average &mdash; <span class="m">f(0.4, b<sub>1</sub>, b<sub>2</sub>) = 0.6 &middot; f(0, b<sub>1</sub>, b<sub>2</sub>) + 0.4 &middot; f(1, b<sub>1</sub>, b<sub>2</sub>)</span>.
+      That's what the "Reduce" step in each round does: pairwise interpolation, O(1) per entry, halving the table.
+      For the degree-3 case (<span class="m">f = A&prime; &middot; B&prime; &middot; mask</span>),
+      the prover keeps <em>separate</em> tables for each factor &mdash; each one is still multilinear, so each
+      gets reduced independently by cheap pairwise interpolation. The factors are only multiplied together
+      pointwise when computing the round polynomial's evaluation points.
+    </p>
+    <p class="text-small" style="color:var(--text-dim);font-style:italic">
+      The sandbox uses small decimals (r=0.17) for readability. In the real protocol, challenges are
+      large integers in the finite field (mod a prime <span class="m">q &asymp; 2<sup>31</sup></span>) &mdash;
+      something like r=2384729384729. The interpolation formula is the same:
+      <span class="m">(1&minus;r) &middot; f(0) + r &middot; f(1)</span>, just computed with modular arithmetic instead of floats.
+    </p>
+    <p class="text-small" style="color:var(--text-dim);font-style:italic">
+      This sandbox's <span class="m">f</span> is degree 1 per variable (round polynomials are linear, 2 coefficients each).
+      The actual matmul <span class="m">f = MLE<sub>A</sub> &middot; MLE<sub>B</sub> &middot; mask</span> is degree 3
+      (round polynomials are cubic, 4 coefficients each). Same protocol &mdash; the degree-3 worked example below the sandbox shows what that looks like.
+    </p>
+
+    <div class="flex-row mt-2" style="gap:0.8rem; justify-content:center; flex-wrap:wrap">
+      <div class="flex-col" style="align-items:center">
+        <label class="text-small text-dim">f(0,0,0)</label>
+        <input class="field-input" id="sc-v0" type="number" value="2" style="width:60px">
+      </div>
+      <div class="flex-col" style="align-items:center">
+        <label class="text-small text-dim">f(0,0,1)</label>
+        <input class="field-input" id="sc-v1" type="number" value="5" style="width:60px">
+      </div>
+      <div class="flex-col" style="align-items:center">
+        <label class="text-small text-dim">f(0,1,0)</label>
+        <input class="field-input" id="sc-v2" type="number" value="3" style="width:60px">
+      </div>
+      <div class="flex-col" style="align-items:center">
+        <label class="text-small text-dim">f(0,1,1)</label>
+        <input class="field-input" id="sc-v3" type="number" value="1" style="width:60px">
+      </div>
+      <div class="flex-col" style="align-items:center">
+        <label class="text-small text-dim">f(1,0,0)</label>
+        <input class="field-input" id="sc-v4" type="number" value="4" style="width:60px">
+      </div>
+      <div class="flex-col" style="align-items:center">
+        <label class="text-small text-dim">f(1,0,1)</label>
+        <input class="field-input" id="sc-v5" type="number" value="7" style="width:60px">
+      </div>
+      <div class="flex-col" style="align-items:center">
+        <label class="text-small text-dim">f(1,1,0)</label>
+        <input class="field-input" id="sc-v6" type="number" value="6" style="width:60px">
+      </div>
+      <div class="flex-col" style="align-items:center">
+        <label class="text-small text-dim">f(1,1,1)</label>
+        <input class="field-input" id="sc-v7" type="number" value="8" style="width:60px">
+      </div>
+    </div>
+
+    <div class="flex-row mt-2" style="justify-content:center">
+      <div class="result-box neutral" id="sc-true-sum">True sum over {0,1}&sup3; = ?</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div id="sc-setup" class="flex-row mb-2" style="gap:0.5rem;align-items:center;flex-wrap:wrap">
+      <span class="text-small">What sum will you claim?</span>
+      <input class="field-input" id="sc-claimed" type="number" style="width:70px">
+      <button class="primary" id="btn-sc-start">Start</button>
+      <span class="text-small text-dim" id="sc-claim-note"></span>
+    </div>
+    <div id="sc-status" class="flex-row mb-2" style="gap:0.5rem;align-items:center;flex-wrap:wrap;display:none">
+      <span class="text-small" id="sc-status-text"></span>
+      <button id="btn-sc-reset">Reset</button>
+    </div>
+
+    <div id="sc-rounds" class="round-display"></div>
+
+    <div id="sc-choice" class="flex-row mt-2" style="gap:0.5rem;display:none;flex-wrap:wrap">
+      <span class="text-small" id="sc-choice-label">Round 1:</span>
+      <button class="primary" id="btn-sc-honest">Send honest polynomial</button>
+      <button class="orange" id="btn-sc-fake">Rig this round (fake polynomial)</button>
+    </div>
+
+    <div id="sc-final" style="display:none"></div>
+  </div>
+
+  <div class="card" style="border-color: var(--accent-orange)">
+    <h3 style="color:var(--accent-orange)">What a degree-3 round actually looks like</h3>
+    <p class="text-small">
+      The sandbox above uses a simple sum (degree 1). In the real matmul proof, each round's polynomial
+      comes from a <em>product</em> of three MLEs: <span class="m">A'(j) &middot; B'(j) &middot; mask(j)</span>.
+      Here's how the prover computes one round &mdash; using evaluation form, not symbolic expansion:
+    </p>
+    <div class="equation" style="font-size:var(--fs-sm)">The prover has three evaluation tables. For the current variable X:
+
+  <span class="eq-highlight">A'</span>:    A'(0) = 3    A'(1) = 5    A'(2) = 7    A'(3) = 9
+  <span class="eq-orange">B'</span>:    B'(0) = 5    B'(1) = 6    B'(2) = 7    B'(3) = 8
+  <span class="eq-pink">mask</span>:  m(0) = 1     m(1) = 0     m(2) = -1    m(3) = -2
+  <span class="text-dim">(mask = [1, 0] at binary points, MLE is 1-X, evaluated beyond {0,1})</span>
+
+Multiply pointwise at each X:
+  p(0) = 3 &middot; 5 &middot; 1  = <span class="eq-green">15</span>
+  p(1) = 5 &middot; 6 &middot; 0  = <span class="eq-green">0</span>
+  p(2) = 7 &middot; 7 &middot; -1 = <span class="eq-green">-49</span>
+  p(3) = 9 &middot; 8 &middot; -2 = <span class="eq-green">-144</span>
+
+4 values sent to verifier: [15, 0, -49, -144]</div>
+    <p class="text-small">
+      <span class="val purple">Check:</span> p(0) + p(1) = 15 + 0 = 15 = claimed sum.
+      The verifier reconstructs the degree-3 polynomial from these 4 points,
+      picks a random r, evaluates p(r), and uses it as the target for the next round.
+      No symbolic expansion needed &mdash; just table lookups and pointwise multiplication.
+    </p>
+  </div>
+
+  <div class="challenge" id="challenge-sumcheck">
+    <p>
+      <strong>Try this:</strong> In the sandbox above, change the claimed sum to something false (e.g. 46),
+      click Start, and try to get through all 3 rounds. Try two strategies:
+      (1) rig round 1, then go honest. (2) rig every round.
+      What happens in each case?
+    </p>
+    <button class="orange mt-2" onclick="this.nextElementSibling.classList.toggle('show')">Reveal answer</button>
+    <div class="reveal-content">
+      <strong>Strategy 1 (rig then honest):</strong> You must rig round 1 to match the false claim. But when you
+      go honest in round 2, the real data's sum doesn't match the inflated target from the rigged round 1.
+      Caught at the consistency check.<br><br>
+      <strong>Strategy 2 (rig every round):</strong> You can craft fake polynomials that pass every consistency check.
+      But at the claim opening, the fake chain's final value doesn't match the committed polynomial's real evaluation.
+      You'd need to swap in a different polynomial &mdash; but the commitment binds you to the real one.<br><br>
+      Both paths are dead ends. The protocol has no gap a cheater can exploit.
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 4: LINEAR CLAIMS ═══ -->
+<section id="sec-linear">
+  <div class="section-label">Step 4 of 4</div>
+  <h1>Linear Claims &amp; Folding</h1>
+  <p class="lead">
+    The universal primitive: everything reduces to "this committed polynomial
+    evaluates to this value at this point."
+  </p>
+
+  <h3>What's a Linear Claim?</h3>
+  <div class="state-box">
+    <strong>Have:</strong> evaluation claims about MLE<sub>A</sub>, MLE<sub>B</sub>, MLE<sub>C</sub> at specific points + commitments<br>
+    <strong>Goal:</strong> compress thousands of claims into one verifiable check
+  </div>
+  <p>
+    Sumcheck left us with claims that <span class="m">MLE<sub>A</sub></span> and <span class="m">MLE<sub>B</sub></span>
+    evaluate to specific values at specific points. How does the verifier check those without seeing the polynomials?
+  </p>
+  <p>
+    Before the protocol starts, the prover publishes a <strong>commitment</strong> to each polynomial.
+    The commitment is <em>binding</em> (the prover can't later swap in a different polynomial)
+    and <em>hiding</em> (it reveals nothing about the polynomial's contents).
+    Now each claim has structure:
+  </p>
+  <div class="equation"><span class="eq-highlight">commit(f)</span> = cm &nbsp;&and;&nbsp; <span class="eq-orange">MLE(f)(r)</span> = <span class="eq-green">val</span></div>
+  <p>
+    The commitment <span class="m">cm</span> is public (locked in before any challenges were derived).
+    The polynomial <span class="m">f</span> is private. This is the atomic unit of proof.
+  </p>
+  <div class="card" style="border-color: var(--accent-cyan)">
+    <h3 style="color:var(--accent-cyan)">Ajtai Commitments (simplified)</h3>
+    <p>
+      Compute <span class="m">commit(f) = A &middot; f mod q</span>, where <span class="m">A</span> is a large public random matrix,
+      <span class="m">q</span> is a prime, and <span class="m">f</span> must have <strong>small bounded entries</strong>
+      (e.g. INT8 matrix values in [-128, 127]).
+    </p>
+    <p>
+      <strong>Binding:</strong> Since <span class="m">A</span> has far more columns than rows,
+      infinitely many vectors map to the same commitment &mdash; finding <em>some</em>
+      <span class="m">f&prime;</span> with <span class="m">A &middot; f&prime; = A &middot; f mod q</span> is trivially easy
+      (underdetermined linear system, solve with Gaussian elimination).
+      But those solutions have huge entries &mdash; random values mod <span class="m">q</span>.
+      A valid <span class="m">f&prime;</span> needs <em>small</em> entries (it represents real matrix data, bounded integers).
+      Finding two different short-entry vectors with the same commitment is the
+      <strong>Shortest Integer Solution (SIS)</strong> problem &mdash;
+      believed to be computationally hard for random lattices.
+      Solutions with large entries are everywhere; solutions with small entries are nearly impossible to find.
+    </p>
+    <p>
+      <strong>Hiding:</strong> Without blinding, small matrix entries make commitments vulnerable in two ways:
+    </p>
+    <p>
+      &bull; <strong>Guessing:</strong> INT8 entries have only 256 possible values each. Like an unsalted hash,
+      an attacker could enumerate plausible <span class="m">f</span> vectors and check which one produces the given commitment.
+      Blinding rows act like a salt &mdash; they add high-entropy randomness that makes enumeration infeasible.<br>
+      &bull; <strong>Solving:</strong> The same matrix <span class="m">A</span> is used for all commitments.
+      Without blinding, seeing multiple commitments (<span class="m">A&middot;f<sub>1</sub></span>, <span class="m">A&middot;f<sub>2</sub></span>, &hellip;)
+      with known-small entries gives a system of equations an attacker could try to solve.
+      Blinding rows add independent randomness to each commitment, breaking this.
+    </p>
+    <p>
+      The fix: before committing, the prover appends ~2240 random entries to <span class="m">f</span> itself.
+      The committed vector is now [real data | random blinding], and the randomness dominates.
+      The mask MLE from Section 3 zeroes out the blinding entries during sumcheck
+      so they don't affect the proved computation.
+    </p>
+    <p>
+      <strong>Additive:</strong> <span class="m">A &middot; (f + g) = A &middot; f + A &middot; g</span> &mdash;
+      matrix multiplication distributes.
+      So <span class="m">commit(f + g) = commit(f) + commit(g)</span>. This is what makes folding possible.
+    </p>
+  </div>
+
+  <h3 class="mt-2">How to check a single claim (conceptual)</h3>
+  <p>
+    In the simplest case, the prover <strong>reveals</strong> <span class="m">f</span> (the polynomial with its blinding entries).
+    The verifier does two checks:
+  </p>
+  <p>
+    &bull; <strong>Commitment check:</strong> compute <span class="m">A &middot; f mod q</span> and confirm it matches the published <span class="m">cm</span>.
+    If the prover tried to swap in a different <span class="m">f&prime;</span>, it would need small entries AND
+    the same commitment &mdash; which is the SIS problem we just described.<br>
+    &bull; <strong>Evaluation check:</strong> evaluate <span class="m">MLE(f)(r)</span> and confirm it equals the claimed <span class="m">val</span>.
+  </p>
+  <p>
+    The prover can't pick an <span class="m">f</span> designed to pass at a convenient evaluation point, because
+    the evaluation point <span class="m">r</span> is determined by earlier transcript challenges (Fiat-Shamir):
+    change the polynomial &rarr; change the commitment &rarr; change the hash &rarr; change <span class="m">r</span>.
+    You can't choose a polynomial to match a point that depends on the polynomial you chose.
+  </p>
+  <h3 class="mt-2">The problem with revealing</h3>
+  <p>
+    Checking one claim this way is sound &mdash; but revealing <span class="m">f</span> leaks the matrix data
+    (destroying zero-knowledge), and with thousands of claims the proof becomes enormous.
+  </p>
+
+  <h3 class="mt-2">Folding: Many Claims &rarr; One</h3>
+  <p>
+    The solution to both: <strong>fold</strong> many claims into one, so only a single
+    <em>folded combination</em> is ever revealed &mdash; hiding all individual polynomials and keeping the proof small.
+  </p>
+  <p>
+    <strong>SymphonyFold</strong> compresses many claims into one using a random linear combination.
+    The commitment's additive homomorphism makes this work:
+  </p>
+  <div class="equation">commit(f + &alpha;&middot;g) = commit(f) + &alpha;&middot;commit(g)</div>
+  <p>
+    The verifier picks random weights and combines commitments, points, and values.
+    If <em>any</em> original claim was false, the combined claim is false with overwhelming probability &mdash;
+    the false claim would need to perfectly cancel in the random combination,
+    which requires guessing &alpha; (probability 1/|field|).
+  </p>
+  <p>
+    The binding property survives folding: the verifier computes the folded commitment <em>itself</em>
+    (<span class="m">cm<sub>folded</sub> = cm<sub>1</sub> + &alpha;&middot;cm<sub>2</sub> + &hellip;</span>)
+    from the original public commitments, so the same binding guarantee applies to the combined polynomial.
+    SymphonyFold does this in batches of 32.
+  </p>
+
+  <h3 class="mt-2">Different evaluation points?</h3>
+  <p>
+    There's a subtlety. The folded commitment is <span class="m">cm<sub>1</sub> + &alpha;&middot;cm<sub>2</sub></span> &mdash;
+    a linear combination. For this to be a valid claim, the folded <em>value</em> must be the same linear
+    combination of evaluations: <span class="m">f(r*) + &alpha;&middot;g(r*)</span>. But that only works if both polynomials
+    are evaluated at the <strong>same point</strong> <span class="m">r*</span>.
+  </p>
+  <p>
+    The original claims have <em>different</em> points &mdash; claim 1 knows <span class="m">f(0.3) = 5</span>
+    and claim 2 knows <span class="m">h(0.7) = 9</span> (where <span class="m">f</span> and <span class="m">h</span> are different committed polynomials).
+    How do we get both evaluated at a common <span class="m">r*</span>?
+  </p>
+
+  <h3 class="mt-2">Point alignment: sumcheck on a line</h3>
+  <p>
+    For each polynomial, the prover has the old claim (e.g. <span class="m">f(0.3) = 5</span>) and needs to provide
+    a new claim at the common point (<span class="m">f(r*) = ?</span>). The trick: turn this into a sumcheck problem.
+  </p>
+  <p>
+    Restrict <span class="m">f</span> to the line between the old point and the new point:
+    <span class="m">g(t) = f(0.3&middot;(1&minus;t) + r*&middot;t)</span>.
+    Now <span class="m">g(0) = f(0.3) = 5</span> (known) and <span class="m">g(1) = f(r*)</span> (what we need).
+    The two evaluation points {0, 1} form a 1-dimensional hypercube &mdash; the lowest dimension possible &mdash;
+    and you already know how to verify a sum over a hypercube.
+  </p>
+  <p>
+    The prover sends <span class="m">g</span> (a small univariate polynomial &mdash; low-degree since <span class="m">f</span> is multilinear).
+    The verifier reads off <span class="m">g(0)</span> and <span class="m">g(1)</span> from it:
+  </p>
+  <p>
+    &bull; Checks <span class="m">g(0) = 5</span> &mdash; must match the known claim from sumcheck<br>
+    &bull; Reads <span class="m">g(1)</span> as <span class="m">f(r*)</span> &mdash; the new evaluation needed for folding<br>
+    &bull; Picks random <span class="m">t</span>. The prover evaluates <span class="m">g(t)</span> and provides it as a fresh
+    linear claim (<span class="m">f</span> at a random point on the line through the old and new evaluation points)
+  </p>
+  <p>
+    If the prover lied about <span class="m">g</span> (made it pass the <span class="m">g(0)=5</span> check
+    but with a wrong <span class="m">g(1)</span>), the random evaluation <span class="m">g(t)</span> will almost certainly
+    be wrong &mdash; same principle as sumcheck. It's a 1-round sumcheck on a 1-dimensional hypercube.
+  </p>
+  <p>
+    After doing this for each polynomial, all claims are at the common point <span class="m">r*</span>
+    and folding proceeds normally:
+  </p>
+  <div class="equation" style="font-size:var(--fs-sm)">commit: cm<sub>f</sub> + &alpha;&middot;cm<sub>h</sub>  &nbsp; <span class="eq-green">&check;</span> linear combo of commitments
+point:  <span class="eq-orange">r*</span>  &nbsp; <span class="eq-green">&check;</span> one shared point
+value:  f(<span class="eq-orange">r*</span>) + &alpha;&middot;h(<span class="eq-orange">r*</span>)  &nbsp; <span class="eq-green">&check;</span> same linear combo of evaluations</div>
+  <p class="text-small text-dim">
+    Note: per-polynomial line-restrictions produce fresh claims as overhead (one per polynomial).
+    The actual SymphonyFold avoids this by processing all claims in a single "unifying sumcheck"
+    that resolves alignment and folding in one pass.
+    The line trick above captures the core idea; the batching is what makes it efficient at scale.
+    The toy sandbox below only demonstrates the commitment homomorphism.
+  </p>
+
+  <div class="challenge" id="challenge-linear">
+    <p>
+      <strong>Try this:</strong> In the sandbox, try all three buttons:
+      (1) "Fold" &mdash; honest, everything passes.
+      (2) "Tamper with polynomial" &mdash; changes f<sub>2</sub> without updating the commitment. Which check catches it?
+      (3) "Lie about value" &mdash; keeps the correct polynomial but claims a wrong evaluation value. Which check catches it?
+    </p>
+    <button class="orange mt-2" onclick="this.nextElementSibling.classList.toggle('show')">Reveal answer</button>
+    <div class="reveal-content">
+      Tampering with the polynomial is caught by the <strong>commitment check</strong> &mdash;
+      the recomputed commitment doesn't match.
+      Lying about the value is caught by the <strong>evaluation check</strong> &mdash;
+      the polynomial evaluates to a different value than what was claimed.
+      Two different attacks, two different checks, both needed.
+    </div>
+  </div>
+
+  <h3 class="mt-2">The final check: how it all confirms the result</h3>
+  <p>
+    After all folding, one claim remains. The verifier has independently computed two things
+    from public data (commitments + Fiat-Shamir random weights):
+  </p>
+  <p>
+    &bull; The <strong>expected commitment</strong>: <span class="m">cm<sub>folded</sub> = cm<sub>1</sub> + &alpha;<sub>1</sub>&middot;cm<sub>2</sub> + &alpha;<sub>2</sub>&middot;cm<sub>3</sub> + &hellip;</span><br>
+    &bull; The <strong>expected value</strong>: <span class="m">v<sub>folded</sub> = v<sub>1</sub> + &alpha;<sub>1</sub>&middot;v<sub>2</sub> + &alpha;<sub>2</sub>&middot;v<sub>3</sub> + &hellip;</span> (same weights, same linear combination, at the shared point <span class="m">r*</span>)
+  </p>
+  <p>
+    Now the prover reveals the folded polynomial <span class="m">f<sub>folded</sub></span>. The verifier checks:
+  </p>
+  <p>
+    &bull; <span class="m">commit(f<sub>folded</sub>) = cm<sub>folded</sub></span>? &mdash; confirms the revealed polynomial matches the committed matrices<br>
+    &bull; <span class="m">MLE(f<sub>folded</sub>)(r*) = v<sub>folded</sub></span>? &mdash; confirms the evaluation is correct
+  </p>
+  <p>
+    If both pass, the verifier is convinced: the original matrices A, B, C satisfied A&times;B = C.
+    The chain holds because each step was locked in by the previous one &mdash;
+    commitments determined the Freivalds challenges, which determined the sumcheck challenges,
+    which determined the evaluation points, which determined the folding weights.
+    This is the only moment polynomial data is revealed, and it's a folded combination &mdash; not any original matrix.
+  </p>
+  <p class="text-small text-dim">
+    Note: the actual SymphonyFold verification is more involved than this sketch. After the unifying sumcheck
+    aligns evaluation points, there are additional steps (a monomial/projection proof and an auxiliary witness check)
+    before the final claim is verified. The final claim is on a helper commitment derived during folding,
+    not directly on the original cm<sub>A</sub>/cm<sub>B</sub>/cm<sub>C</sub>. The conceptual picture
+    (many claims compress to one via homomorphism + random challenges) is accurate, but the intermediate
+    machinery is more complex than "just add commitments."
+  </p>
+
+
+  <div class="sandbox" id="sandbox-linear">
+    <h3>Try it: Claim Folding with Toy Commitments</h3>
+    <p class="text-small text-dim mt-1">
+      Toy additive "commitments" (sum mod 97). Two claims at the <strong>same evaluation point</strong>
+      (after point-alignment) fold into one via random &alpha;.
+    </p>
+
+    <div class="column-2 mt-2">
+      <div class="card" style="border-color: var(--accent-cyan)">
+        <h3 style="color:var(--accent-cyan)">Claim 1</h3>
+        <div class="flex-col mt-1">
+          <div><span class="text-dim text-small">Polynomial f<sub>1</sub>:</span> <span class="val cyan" id="fold-f1">[3, 7, 2, 5]</span></div>
+          <div><span class="text-dim text-small">Commitment:</span> <span class="val cyan" id="fold-cm1">17</span> <span class="text-dim text-small">(sum mod 97)</span></div>
+          <div><span class="text-dim text-small">Eval point r*:</span> <span class="val orange" id="fold-r1">(0.3, 0.7)</span></div>
+          <div><span class="text-dim text-small">Value f<sub>1</sub>(r*):</span> <span class="val green" id="fold-v1">?</span></div>
+        </div>
+      </div>
+      <div class="card" style="border-color: var(--accent-orange)">
+        <h3 style="color:var(--accent-orange)">Claim 2</h3>
+        <div class="flex-col mt-1">
+          <div><span class="text-dim text-small">Polynomial f<sub>2</sub>:</span> <span class="val orange" id="fold-f2">[1, 9, 4, 6]</span></div>
+          <div><span class="text-dim text-small">Commitment:</span> <span class="val orange" id="fold-cm2">20</span> <span class="text-dim text-small">(sum mod 97)</span></div>
+          <div><span class="text-dim text-small">Eval point r*:</span> <span class="val orange" id="fold-r2">(0.3, 0.7)</span></div>
+          <div><span class="text-dim text-small">Value f<sub>2</sub>(r*):</span> <span class="val green" id="fold-v2">?</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex-row mt-2" style="justify-content:center">
+      <button class="primary" id="btn-fold">Fold with random &alpha;</button>
+      <button class="orange" id="btn-fold-corrupt-poly">Tamper with polynomial &amp; fold</button>
+      <button class="orange" id="btn-fold-corrupt-val">Lie about value &amp; fold</button>
+      <button id="btn-fold-new">New polynomials</button>
+    </div>
+
+    <div id="fold-result" class="mt-2" style="display:none">
+      <div class="divider"></div>
+      <div id="fold-attack" class="text-small mb-1" style="display:none;font-family:var(--font-mono);font-size:var(--fs-sm)"></div>
+      <div class="card" style="border-color: var(--accent-green)">
+        <h3 style="color:var(--accent-green)">Folded Claim</h3>
+        <div class="flex-col mt-1">
+          <div><span class="text-dim text-small">Random &alpha;:</span> <span class="val pink" id="fold-alpha">?</span></div>
+          <div><span class="text-dim text-small">f<sub>1</sub> + &alpha;&middot;f<sub>2</sub>:</span> <span class="val green" id="fold-combined-f">?</span></div>
+          <div><span class="text-dim text-small">cm<sub>1</sub> + &alpha;&middot;cm<sub>2</sub> mod 97:</span> <span class="val green" id="fold-combined-cm">?</span></div>
+          <div><span class="text-dim text-small">v<sub>1</sub> + &alpha;&middot;v<sub>2</sub>:</span> <span class="val green" id="fold-combined-v">?</span></div>
+        </div>
+        <div class="mt-2">
+          <div id="fold-verify" class="result-box neutral">Verifying...</div>
+        </div>
+        <p class="text-small text-dim mt-1">
+          The verifier checks: does <code>commit(f_combined) = folded commitment</code>?
+          If yes, both claims are (probably) valid &mdash; one check covers two claims.
+        </p>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ═══ PIPELINE ═══ -->
+<section id="sec-pipeline">
+  <div class="section-label">Putting It All Together</div>
+  <h1>End-to-End: Trace a Real Matmul Proof</h1>
+  <p class="lead">Follow concrete numbers through every step of the pipeline for a 2&times;2 matmul.</p>
+
+  <div class="sandbox" style="border-color: var(--accent-green)">
+    <h3 style="color:var(--accent-green)">Live Pipeline Tracer</h3>
+    <p class="text-small text-dim mt-1">Click "Next Step" to advance. Each step shows real computed values.</p>
+
+    <div id="pipe-trace" class="mt-2"></div>
+
+    <div class="flex-row mt-2" style="justify-content:center">
+      <button class="primary" id="btn-pipe-next">Next Step</button>
+      <button id="btn-pipe-reset">Reset</button>
+      <span class="text-small text-dim" id="pipe-step-label">Step 0 / 6</span>
+    </div>
+  </div>
+
+  <div class="sticky-note mt-3">
+    <strong>What makes this zero-knowledge?</strong> The verifier sees: commitments (opaque lattice vectors),
+    Fiat-Shamir challenges (deterministic from public data), sumcheck round polynomials (small univariates),
+    and evaluation claims. The actual matrix entries, model weights, and intermediate activations are never revealed.
+  </div>
+
+  <div class="challenge mt-3" id="challenge-pipeline">
+    <p>
+      <strong>Try this:</strong> Step through all 6 pipeline steps. As you go, make a list of everything the
+      verifier receives. Then ask yourself: from that list, could you recover any entry of matrix A?
+    </p>
+    <button class="orange mt-2" onclick="this.nextElementSibling.classList.toggle('show')">Reveal answer</button>
+    <div class="reveal-content">
+      At minimum: commitments, sumcheck round polynomials, evaluation claims, and folding data.
+      The actual proof transcript is larger than this toy example suggests &mdash; SymphonyFold adds
+      helper commitments, a unifying sumcheck transcript, projection data, and an auxiliary witness &mdash;
+      but it's still a compact set of algebraic objects, not matrix entries.
+      No entry of A, B, or C is ever revealed. The final revealed polynomial is a folded combination &mdash;
+      you can't disentangle the individual matrices from it.
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="card" style="border-color: var(--border-bright)">
+    <h3 style="color:var(--text-dim)">What's Not Covered Here</h3>
+    <p class="text-small">This guide covers the core matmul proving flow. Important topics omitted for clarity:</p>
+    <div class="column-2" style="margin-top:0.5rem">
+      <div>
+        <p class="text-small"><span class="val cyan">&bull;</span> <strong>Ajtai commitment internals</strong> &mdash; lattice-based hash using ring polynomial arithmetic (Z<sub>q</sub>[x])</p>
+        <p class="text-small"><span class="val cyan">&bull;</span> <strong>Limb decomposition</strong> &mdash; large values split into smaller "limbs" to stay within commitment bounds (<code>_linear_comb_limbs</code>)</p>
+        <p class="text-small"><span class="val cyan">&bull;</span> <strong>Batch processing</strong> &mdash; <code>add_matmul(As, B, Cs, ...)</code> processes multiple activations with a shared weight matrix</p>
+      </div>
+      <div>
+        <p class="text-small"><span class="val orange">&bull;</span> <strong>Ring vs field element paths</strong> &mdash; <code>reduce_to_linear_felt</code> (field, degree 3) vs <code>reduce_to_linear_relt</code> (ring, degree 4)</p>
+        <p class="text-small"><span class="val orange">&bull;</span> <strong>Other operation proofs</strong> &mdash; SoftmaxClaim, LookupClaim, TranslationClaim, HadamardClaim (same linear-claim output)</p>
+        <p class="text-small"><span class="val orange">&bull;</span> <strong>Multi-GPU distribution</strong> &mdash; NCCL P2P dispatch to worker GPUs, streaming_worker eager folding</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ JAVASCRIPT ═══ -->
+<script>
+// === Utilities ===
+const mod = (a, m) => ((a % m) + m) % m;
+const rand = (lo, hi) => Math.floor(Math.random() * (hi - lo + 1)) + lo;
+
+// === Nav scroll tracking ===
+const sections = ['hero','sec-freivalds','sec-mle','sec-sumcheck','sec-linear','sec-pipeline'];
+const navLinks = document.querySelectorAll('nav a');
+
+function updateNav() {
+  const scrollY = window.scrollY + 200;
+  let idx = 0;
+  sections.forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (el && el.offsetTop <= scrollY) idx = i;
+  });
+  navLinks.forEach((a, i) => a.classList.toggle('active', i === idx));
+  for (let i = 0; i < 5; i++) {
+    const dot = document.getElementById('dot-' + i);
+    dot.className = 'nav-dot';
+    if (i < idx - 1) dot.classList.add('done');
+    else if (i === idx - 1) dot.classList.add('current');
+  }
+}
+window.addEventListener('scroll', () => requestAnimationFrame(updateNav));
+updateNav();
+
+
+// ========================
+// FREIVALDS SANDBOX
+// ========================
+let matA = [[1,2],[3,4]], matB = [[5,6],[7,8]], matC = [[19,22],[43,50]];
+let vecR = [rand(1,9), rand(1,9)];
+let vecU = [rand(1,9), rand(1,9)];
+
+function renderMatrix(id, mat, editable) {
+  const el = document.getElementById(id);
+  el.innerHTML = '';
+  for (let i = 0; i < mat.length; i++)
+    for (let j = 0; j < mat[0].length; j++) {
+      const cell = document.createElement('div');
+      cell.className = 'matrix-cell';
+      if (editable) {
+        const inp = document.createElement('input');
+        inp.type = 'number'; inp.value = mat[i][j];
+        inp.addEventListener('input', e => { mat[i][j] = parseInt(e.target.value)||0; computeFreivalds(); });
+        cell.appendChild(inp);
+      } else cell.textContent = mat[i][j];
+      el.appendChild(cell);
+    }
+}
+
+function renderVector(id, vec) {
+  const el = document.getElementById(id);
+  el.innerHTML = '';
+  vec.forEach(v => { const c = document.createElement('div'); c.className='matrix-cell'; c.textContent=v; el.appendChild(c); });
+}
+
+function matMul(a, b) {
+  const R = a.length, C = b[0].length, K = b.length;
+  const out = Array.from({length:R}, ()=>Array(C).fill(0));
+  for (let i=0;i<R;i++) for (let j=0;j<C;j++) for (let k=0;k<K;k++) out[i][j]+=a[i][k]*b[k][j];
+  return out;
+}
+
+function matVecMul(m, v) { return m.map(row => row.reduce((s,val,j) => s+val*v[j], 0)); }
+
+function dot(a, b) { return a.reduce((s, v, i) => s + v * b[i], 0); }
+
+function computeFreivalds() {
+  const Bv = matVecMul(matB, vecR);
+  const ABv = matVecMul(matA, Bv);
+  const Cv = matVecMul(matC, vecR);
+
+  // One-sided: compare vectors
+  document.getElementById('lhs-result').textContent = `[${ABv.join(', ')}]`;
+  document.getElementById('rhs-result').textContent = `[${Cv.join(', ')}]`;
+  const match1 = ABv.every((v,i) => v === Cv[i]);
+  const v1 = document.getElementById('freivalds-verdict');
+  v1.className = 'result-box ' + (match1 ? 'pass' : 'fail');
+  v1.textContent = match1 ? '\u2713 Vectors match' : '\u2717 Vectors differ!';
+
+  // Two-sided: compare scalars
+  const lhsScalar = dot(vecU, ABv);
+  const rhsScalar = dot(vecU, Cv);
+  document.getElementById('lhs-scalar').textContent = lhsScalar;
+  document.getElementById('rhs-scalar').textContent = rhsScalar;
+  const match2 = lhsScalar === rhsScalar;
+  const v2 = document.getElementById('freivalds-verdict-2');
+  v2.className = 'result-box ' + (match2 ? 'pass' : 'fail');
+  v2.textContent = match2
+    ? `\u2713 ${lhsScalar} = ${rhsScalar} \u2014 Scalars match`
+    : `\u2717 ${lhsScalar} \u2260 ${rhsScalar} \u2014 Scalars differ!`;
+}
+
+function initFreivalds() {
+  renderMatrix('mat-A', matA, true);
+  renderMatrix('mat-B', matB, true);
+  renderMatrix('mat-C', matC, true);
+  renderVector('vec-r', vecR);
+  renderVector('vec-u', vecU);
+  computeFreivalds();
+}
+
+document.getElementById('btn-compute-c').addEventListener('click', () => {
+  matC = matMul(matA, matB);
+  renderMatrix('mat-C', matC, true);
+  computeFreivalds();
+});
+
+document.getElementById('btn-corrupt-c').addEventListener('click', () => {
+  matC[rand(0,1)][rand(0,1)] += rand(1,10);
+  renderMatrix('mat-C', matC, true);
+  computeFreivalds();
+});
+
+document.getElementById('btn-new-r').addEventListener('click', () => {
+  vecR = [rand(1,9), rand(1,9)];
+  vecU = [rand(1,9), rand(1,9)];
+  renderVector('vec-r', vecR);
+  renderVector('vec-u', vecU);
+  computeFreivalds();
+});
+
+initFreivalds();
+
+// ========================
+// MLE SANDBOX (3 variables, 8 values)
+// ========================
+let mleVals = [2, 5, 3, 1, 4, 7, 6, 8]; // indexed as b0*4 + b1*2 + b2
+
+function mleEval3v(vals, x0, x1, x2) {
+  let s = 0;
+  for (let b0=0; b0<2; b0++)
+    for (let b1=0; b1<2; b1++)
+      for (let b2=0; b2<2; b2++)
+        s += vals[b0*4+b1*2+b2] * (b0?x0:1-x0) * (b1?x1:1-x1) * (b2?x2:1-x2);
+  return s;
+}
+
+function getInputVals(prefix, n=8) {
+  return Array.from({length:n}, (_,i) => parseFloat(document.getElementById(prefix+i).value)||0);
+}
+function getMleVals() { return getInputVals('mle-v'); }
+
+function updateMLE() {
+  mleVals = getMleVals();
+  // Sync the "show" labels
+  for (let i=0; i<8; i++) {
+    const el = document.getElementById('mle-show-'+i);
+    if (el) el.textContent = mleVals[i];
+  }
+  const x0 = parseInt(document.getElementById('mle-x0').value)/100;
+  const x1 = parseInt(document.getElementById('mle-x1').value)/100;
+  const x2 = parseInt(document.getElementById('mle-x2').value)/100;
+  document.getElementById('mle-x0-val').textContent = x0.toFixed(2);
+  document.getElementById('mle-x1-val').textContent = x1.toFixed(2);
+  document.getElementById('mle-x2-val').textContent = x2.toFixed(2);
+
+  const result = mleEval3v(mleVals, x0, x1, x2);
+  document.getElementById('mle-result').textContent = `MLE(${x0.toFixed(2)}, ${x1.toFixed(2)}, ${x2.toFixed(2)}) = ${result.toFixed(3)}`;
+
+  const tbody = document.querySelector('#mle-table tbody');
+  tbody.innerHTML = '';
+  for (let b0=0; b0<2; b0++)
+    for (let b1=0; b1<2; b1++)
+      for (let b2=0; b2<2; b2++) {
+        const val = mleVals[b0*4+b1*2+b2];
+        const w = (b0?x0:1-x0) * (b1?x1:1-x1) * (b2?x2:1-x2);
+        const contrib = val * w;
+        const tr = document.createElement('tr');
+        if (w > 0.2) tr.classList.add('selected');
+        tr.innerHTML = `<td>${b0}</td><td>${b1}</td><td>${b2}</td>
+          <td style="color:var(--accent-cyan)">${val}</td>
+          <td style="color:var(--accent-pink)">${w.toFixed(4)}</td>
+          <td style="color:var(--accent-green)">${contrib.toFixed(4)}</td>`;
+        tbody.appendChild(tr);
+      }
+}
+
+function initMLE() {
+  // Wire up value inputs
+  for (let i=0; i<8; i++) {
+    document.getElementById('mle-v'+i).addEventListener('input', updateMLE);
+  }
+  updateMLE();
+}
+
+document.getElementById('mle-x0').addEventListener('input', updateMLE);
+document.getElementById('mle-x1').addEventListener('input', updateMLE);
+document.getElementById('mle-x2').addEventListener('input', updateMLE);
+initMLE();
+
+// ========================
+// BRIDGE: 4x4 Lagrange weight calculator
+// ========================
+function updateBridgeWeights() {
+  const r0 = parseInt(document.getElementById('bridge-r0').value)/100;
+  const r1 = parseInt(document.getElementById('bridge-r1').value)/100;
+  document.getElementById('bridge-r0-val').textContent = r0.toFixed(2);
+  document.getElementById('bridge-r1-val').textContent = r1.toFixed(2);
+
+  const w = [
+    (1-r0)*(1-r1),
+    (1-r0)*r1,
+    r0*(1-r1),
+    r0*r1,
+  ];
+  document.getElementById('bridge-weights').innerHTML =
+    `u = [<span class="eq-purple">${w.map(v=>v.toFixed(3)).join(', ')}</span>]`;
+  document.getElementById('bridge-interp').textContent =
+    `Row 0 gets ${(w[0]*100).toFixed(0)}%, row 1 gets ${(w[1]*100).toFixed(0)}%, row 2 gets ${(w[2]*100).toFixed(0)}%, row 3 gets ${(w[3]*100).toFixed(0)}%`;
+}
+
+document.getElementById('bridge-r0').addEventListener('input', updateBridgeWeights);
+document.getElementById('bridge-r1').addEventListener('input', updateBridgeWeights);
+updateBridgeWeights();
+
+// ========================
+// SUMCHECK SANDBOX (3 variables, 8 values)
+// ========================
+function getSCVals() { return getInputVals('sc-v'); }
+function setSCInputsDisabled(disabled) {
+  for (let i=0; i<8; i++) document.getElementById('sc-v'+i).disabled = disabled;
+}
+
+function updateSCSum() {
+  const v = getSCVals();
+  const s = v.reduce((a,b)=>a+b,0);
+  document.getElementById('sc-true-sum').textContent =
+    `True sum over {0,1}\u00B3 = ${v.join(' + ')} = ${s}`;
+}
+Array.from({length:8}, (_,i)=>'sc-v'+i).forEach(id =>
+  document.getElementById(id).addEventListener('input', updateSCSum));
+updateSCSum();
+
+// ─── Interactive sumcheck state machine ───
+let scState = null;
+
+function scInit() {
+  const vals = getSCVals();
+  const trueSum = vals.reduce((a,b)=>a+b, 0);
+  const claimedRaw = document.getElementById('sc-claimed').value.trim();
+  const claimed = claimedRaw === '' ? trueSum : parseFloat(claimedRaw);
+  const isLying = Math.abs(claimed - trueSum) > 0.001;
+
+  document.getElementById('sc-claim-note').textContent = isLying
+    ? `(true sum is ${trueSum} \u2014 lying by ${claimed - trueSum}!)`
+    : `(this is the true sum)`;
+
+  scState = {
+    vals, trueSum, claimedSum: claimed,
+    live: vals.slice(),
+    roundNum: 0,
+    target: claimed,
+    challenges: [],
+    lied: [],
+  };
+
+  document.getElementById('sc-rounds').innerHTML = '';
+  document.getElementById('sc-final').style.display = 'none';
+  document.getElementById('sc-final').innerHTML = '';
+  // Lock inputs and swap to status bar
+  setSCInputsDisabled(true);
+  document.getElementById('sc-setup').style.display = 'none';
+  document.getElementById('sc-status').style.display = 'flex';
+  document.getElementById('sc-status-text').innerHTML = isLying
+    ? `Claiming sum = <span class="val pink">${claimed}</span> (true sum is <span class="val green">${trueSum}</span> &mdash; lying by ${(claimed - trueSum).toFixed(1)})`
+    : `Claiming sum = <span class="val green">${claimed}</span> (this is the true sum)`;
+  scShowChoice();
+}
+
+function scShowChoice() {
+  if (scState.roundNum >= 3) {
+    document.getElementById('sc-choice').style.display = 'none';
+    scShowFinalCheck();
+    return;
+  }
+  const s = scState;
+  const el = document.getElementById('sc-choice');
+  el.style.display = 'flex';
+
+  const n = s.roundNum;
+  const live = s.live;
+  const halfLen = live.length / 2;
+  let honestSum = 0;
+  for (let i = 0; i < halfLen; i++) honestSum += live[i];
+  for (let i = halfLen; i < live.length; i++) honestSum += live[i];
+  const wouldPass = Math.abs(honestSum - s.target) < 0.001;
+
+  if (wouldPass) {
+    document.getElementById('sc-choice-label').innerHTML =
+      `Round ${n+1}: honest sum (${honestSum.toFixed(1)}) matches the target. Send honest?`;
+  } else {
+    document.getElementById('sc-choice-label').innerHTML =
+      `Round ${n+1}: honest sum is <span class="val pink">${honestSum.toFixed(3)}</span> but target is <span class="val cyan">${s.target.toFixed(3)}</span> &mdash; honest will fail!`;
+  }
+}
+
+function scPlayRound(fake) {
+  if (!scState || scState.roundNum >= 3) return;
+  const s = scState;
+  const n = s.roundNum;
+  const live = s.live;
+  const halfLen = live.length / 2;
+
+  // Honest values: sum first half vs second half
+  let honest_p0 = 0, honest_p1 = 0;
+  for (let i = 0; i < halfLen; i++) honest_p0 += live[i];
+  for (let i = halfLen; i < live.length; i++) honest_p1 += live[i];
+
+  let p0, p1;
+  if (fake) {
+    // Rig: choose p0, p1 such that p0 + p1 = target
+    p0 = s.target * 0.6 + (n * 1.7); // arbitrary split, varies by round
+    p1 = s.target - p0;
+  } else {
+    p0 = honest_p0;
+    p1 = honest_p1;
+  }
+
+  const checkSum = p0 + p1;
+  const pass = Math.abs(checkSum - s.target) < 0.001;
+  const r = rand(15,85)/100;
+  const pAtR = p0 + (p1 - p0) * r;
+
+  // Reduce live values (always using honest data)
+  const newLive = [];
+  for (let i = 0; i < halfLen; i++) {
+    newLive.push(live[i] * (1-r) + live[i + halfLen] * r);
+  }
+
+  const varNames = ['x<sub>0</sub>', 'x<sub>1</sub>', 'x<sub>2</sub>'];
+  const sumOutNames = [', x<sub>1</sub>, x<sub>2</sub>', ', x<sub>2</sub>', ''];
+
+  // Build derivation text
+  let derivation;
+  if (fake) {
+    derivation = `<span style="color:var(--accent-pink)">RIGGED:</span> any p(0), p(1) that sum to ${s.target.toFixed(3)} will pass. Chose p(0) = ${p0.toFixed(3)}, p(1) = ${p1.toFixed(3)}.
+<span class="text-dim">Honest would have been: p(0) = ${honest_p0.toFixed(3)}, p(1) = ${honest_p1.toFixed(3)}, sum = ${(honest_p0+honest_p1).toFixed(3)}</span>`;
+  } else {
+    const halfLabels = live.length === 8
+      ? [`${varNames[n]}=0: ${live.slice(0,halfLen).map(v=>v.toFixed(2)).join('+')} = ${p0.toFixed(3)}`,
+         `${varNames[n]}=1: ${live.slice(halfLen).map(v=>v.toFixed(2)).join('+')} = ${p1.toFixed(3)}`]
+      : [`${varNames[n]}=0: ${live.slice(0,halfLen).map(v=>v.toFixed(3)).join(' + ')} = ${p0.toFixed(3)}`,
+         `${varNames[n]}=1: ${live.slice(halfLen).map(v=>v.toFixed(3)).join(' + ')} = ${p1.toFixed(3)}`];
+    derivation = `${halfLabels[0]}\n${halfLabels[1]}`;
+  }
+
+  // Render
+  const passClass = pass ? 'pass' : 'fail';
+  const valClass = pass ? 'green' : 'pink';
+  const targetLabel = n === 0 ? `claimed sum ${s.target.toFixed(1)}` : `previous round's value ${s.target.toFixed(3)}`;
+
+  let html = `<div class="round active" style="animation: fadeIn 0.4s ease-out">
+    <div class="round-header">
+      <span class="round-num">Round ${n+1} &mdash; fix ${varNames[n]}${fake ? ' <span style="color:var(--accent-pink)">(RIGGED)</span>' : ''}</span>
+      <span class="round-status ${passClass}">${pass ? 'PASS' : 'FAIL'}</span>
+    </div>
+    <div class="text-small mono-detail">
+      <strong style="color:var(--accent-cyan)">Prover computes and sends p(0), p(1):</strong>
+    </div>
+    <div class="text-small" style="padding-left:1rem;font-family:var(--font-mono);font-size:var(--fs-sm);white-space:pre-wrap;line-height:1.6;color:var(--text)">${derivation}</div>
+    <div class="text-small mt-1 mono-detail">
+      <strong style="color:var(--accent-orange)">Verifier checks:</strong>
+      p(0) + p(1) = ${p0.toFixed(3)} + ${p1.toFixed(3)} = <span class="val ${valClass}">${checkSum.toFixed(3)}</span>
+      ${pass ? '=' : '\u2260'} ${targetLabel}
+    </div>
+    </div>`;
+
+  if (pass) {
+    html += `<div class="text-small mt-1 mono-detail">
+      <strong style="color:var(--accent-orange)">Verifier picks random:</strong>
+      r<sub>${n}</sub> = ${r.toFixed(2)}, interpolates
+      <span class="has-tooltip">p(${r.toFixed(2)}) = ${p0.toFixed(3)} + ${(p1-p0).toFixed(3)}&middot;${r.toFixed(2)} = <span class="val cyan">${pAtR.toFixed(3)}</span><span class="tooltip">The verifier reconstructs p(X) = ${p0.toFixed(3)} + ${(p1-p0).toFixed(3)}&middot;X from the two sent points p(0)=${p0.toFixed(3)}, p(1)=${p1.toFixed(3)}. This is the unique degree-1 polynomial through those points. Evaluating at X=${r.toFixed(2)} gives the carry-forward value for the next round.</span></span>
+    </div>`;
+  }
+
+  if (pass && n < 2) {
+    // Show reduction — how the live table updates
+    const reduceLines = newLive.map((v, i) => {
+      return `${live[i].toFixed(3)}&middot;${(1-r).toFixed(2)} + ${live[i+halfLen].toFixed(3)}&middot;${r.toFixed(2)} = ${v.toFixed(3)}`;
+    });
+    const honestPAtR = honest_p0 + (honest_p1 - honest_p0) * r;
+    html += `<div class="text-small mt-1 mono-detail">
+      <strong style="color:var(--accent-cyan)">Prover reduces table (${live.length} &rarr; ${newLive.length} values):</strong>
+    </div>
+    <div class="text-small" style="font-family:var(--font-mono);font-size:var(--fs-sm);padding-left:1rem;line-height:1.6">
+      ${reduceLines.join('<br>')}
+    </div>
+    <div class="text-small">
+      <span style="font-family:var(--font-mono);font-size:var(--fs-sm);color:var(--accent-cyan)">&rarr; [${newLive.map(v=>v.toFixed(3)).join(', ')}]</span>
+      <span class="text-dim"> enters round ${n+2}</span>
+    </div>`;
+    if (fake) {
+      html += `<div class="text-small mt-1" style="color:var(--accent-pink);font-family:var(--font-mono);font-size:var(--fs-sm)">
+        The fake polynomial set the next round's target to ${pAtR.toFixed(3)},
+        but the real data at this point evaluates to ${honestPAtR.toFixed(3)}.
+        That gap of ${Math.abs(pAtR - honestPAtR).toFixed(3)} means going honest next round will fail the consistency check.
+      </div>`;
+    }
+  }
+
+  html += `</div>`;
+  document.getElementById('sc-rounds').insertAdjacentHTML('beforeend', html);
+
+  // Update state
+  s.live = newLive;
+  s.target = pAtR;
+  s.challenges.push(r);
+  s.lied.push(fake);
+  s.roundNum++;
+
+  if (!pass) {
+    // Caught immediately
+    document.getElementById('sc-choice').style.display = 'none';
+    document.getElementById('sc-final').style.display = 'block';
+    const pathSoFar = s.lied.map((l, i) => `R${i+1}:${l ? 'rig' : 'ok'}`).join(' &rarr; ');
+    document.getElementById('sc-final').innerHTML =
+      `<div class="result-box fail mt-1">\u2717 Caught at round ${n+1}. Honest data sums to ${checkSum.toFixed(3)} but the target from the rigged round is ${s.target.toFixed(3)}. Once a round is rigged, the carry-forward diverges &mdash; going honest exposes the gap.</div>
+       <p class="text-small text-dim mt-1">${pathSoFar} &rarr; caught at consistency check</p>`;
+    return;
+  }
+
+  scShowChoice();
+}
+
+function scShowFinalCheck() {
+  const s = scState;
+  const [r0, r1, r2] = s.challenges;
+  const trueFinal = mleEval3v(s.vals, r0, r1, r2);
+  const chainFinal = s.target; // what the chain of round polynomials arrived at
+  const match = Math.abs(trueFinal - chainFinal) < 0.001;
+  const everLied = s.lied.some(x => x);
+
+  let html = `<div class="round active" style="animation: fadeIn 0.4s ease-out">
+    <div class="round-header">
+      <span class="round-num">Claim Opening Check</span>
+      <span class="round-status ${match ? 'pass' : 'fail'}">${match ? 'PASS' : 'FAIL'}</span>
+    </div>
+    <div class="text-small mono-detail">
+      Chain arrived at: <span class="val ${match?'green':'pink'}">${chainFinal.toFixed(3)}</span><br>
+      Committed polynomial f(${r0.toFixed(2)}, ${r1.toFixed(2)}, ${r2.toFixed(2)}) = <span class="val green">${trueFinal.toFixed(3)}</span>
+    </div>
+    <div class="text-small mt-1">
+      ${match
+        ? `<span class="val green">\u2713 Match!</span>`
+        : `<span class="val pink">\u2717 MISMATCH!</span> The fake chain doesn't land on the committed polynomial's true value.`}
+    </div>
+  </div>`;
+
+  document.getElementById('sc-rounds').insertAdjacentHTML('beforeend', html);
+  document.getElementById('sc-final').style.display = 'block';
+
+  // Path summary
+  const pathStr = s.lied.map((l, i) => `R${i+1}:${l ? 'rig' : 'ok'}`).join(' &rarr; ');
+
+  if (match && !everLied) {
+    document.getElementById('sc-final').innerHTML =
+      `<div class="result-box pass mt-1">\u2713 Sum verified as ${s.trueSum}. The verifier checked ${s.lied.length} round polynomials + 1 claim opening = ${s.lied.length + 1} checks for ${s.vals.length} values.</div>
+       <p class="text-small text-dim mt-1">${pathStr} &rarr; verified</p>
+       <p class="text-small mt-1" style="color:var(--text-dim);font-style:italic">Now try: reset, change the claimed sum, and see if you can cheat your way through all 3 rounds.</p>`;
+  } else if (match && everLied) {
+    document.getElementById('sc-final').innerHTML =
+      `<div class="result-box pass mt-1">\u2713 Got lucky &mdash; the sandbox uses small random ranges. In the real protocol with ~2 billion possible challenges per round, this would be a 1-in-billions coincidence. Try again.</div>
+       <p class="text-small text-dim mt-1">${pathStr} &rarr; fluke</p>`;
+  } else {
+    document.getElementById('sc-final').innerHTML =
+      `<div class="result-box fail mt-1">\u2717 All round checks passed, but the claim opening failed. The fake chain landed at ${chainFinal.toFixed(3)} while the committed polynomial evaluates to ${trueFinal.toFixed(3)}. To pass this check, you'd need to reveal a different polynomial &mdash; but the commitment was locked in before the protocol started, and it binds you to the real one.</div>
+       <p class="text-small text-dim mt-1">${pathStr} &rarr; caught at claim opening</p>`;
+  }
+}
+
+// Set default claimed sum
+function scSetDefault() {
+  const v = getSCVals();
+  const s = v.reduce((a,b)=>a+b,0);
+  document.getElementById('sc-claimed').value = s;
+  document.getElementById('sc-claim-note').textContent = `(true sum is ${s} \u2014 change this to lie!)`;
+}
+scSetDefault();
+
+document.getElementById('btn-sc-start').addEventListener('click', scInit);
+document.getElementById('btn-sc-honest').addEventListener('click', () => scPlayRound(false));
+document.getElementById('btn-sc-fake').addEventListener('click', () => scPlayRound(true));
+document.getElementById('btn-sc-reset').addEventListener('click', () => {
+  scState = null;
+  document.getElementById('sc-rounds').innerHTML = '';
+  document.getElementById('sc-choice').style.display = 'none';
+  document.getElementById('sc-final').style.display = 'none';
+  document.getElementById('sc-final').innerHTML = '';
+  document.getElementById('sc-setup').style.display = 'flex';
+  document.getElementById('sc-status').style.display = 'none';
+  setSCInputsDisabled(false);
+  scSetDefault();
+});
+
+
+// ========================
+// FOLDING SANDBOX
+// ========================
+const P = 97;
+
+function foldInit() {
+  const f1 = [rand(1,15),rand(1,15),rand(1,15),rand(1,15)];
+  const f2 = [rand(1,15),rand(1,15),rand(1,15),rand(1,15)];
+
+  const cm1 = mod(f1.reduce((a,b)=>a+b,0), P);
+  const cm2 = mod(f2.reduce((a,b)=>a+b,0), P);
+
+  const mle4 = (v, r) => v[0]*(1-r[0])*(1-r[1]) + v[1]*(1-r[0])*r[1] + v[2]*r[0]*(1-r[1]) + v[3]*r[0]*r[1];
+
+  // Both claims use the SAME evaluation point (after point-alignment)
+  const rShared = [Math.round(Math.random()*100)/100, Math.round(Math.random()*100)/100];
+  const v1 = mle4(f1, rShared);
+  const v2 = mle4(f2, rShared);
+
+  document.getElementById('fold-f1').textContent = `[${f1.join(', ')}]`;
+  document.getElementById('fold-f2').textContent = `[${f2.join(', ')}]`;
+  document.getElementById('fold-cm1').textContent = cm1;
+  document.getElementById('fold-cm2').textContent = cm2;
+  document.getElementById('fold-r1').textContent = `(${rShared[0].toFixed(2)}, ${rShared[1].toFixed(2)})`;
+  document.getElementById('fold-r2').textContent = `(${rShared[0].toFixed(2)}, ${rShared[1].toFixed(2)})`;
+  document.getElementById('fold-v1').textContent = v1.toFixed(3);
+  document.getElementById('fold-v2').textContent = v2.toFixed(3);
+  document.getElementById('fold-result').style.display = 'none';
+
+  return { f1, f2, cm1, cm2, v1, v2, rShared };
+}
+
+let foldState = foldInit();
+
+document.getElementById('btn-fold-new').addEventListener('click', () => { foldState = foldInit(); });
+
+// mode: 'honest' | 'tamper-poly' | 'lie-value'
+function doFold(mode) {
+  const { f1, f2, cm1, cm2, v1, v2 } = foldState;
+  const alpha = rand(2, 20);
+
+  // Tamper: modify f2[0] without updating commitment
+  const f2_actual = mode === 'tamper-poly' ? [f2[0] + 5, ...f2.slice(1)] : f2;
+
+  // Lie: claim a different value for v2
+  const v2_claimed = mode === 'lie-value' ? v2 + 3 : v2;
+
+  const fC = f1.map((v,i) => v + alpha * f2_actual[i]);
+  const cmC = mod(cm1 + alpha * cm2, P); // verifier computes from public commitments
+  const vC = v1 + alpha * v2_claimed;     // folded claimed value
+
+  // Verifier recomputes commitment from the revealed combined polynomial
+  const cmCheck = mod(fC.reduce((a,b) => a+b, 0), P);
+
+  // Verifier evaluates the combined polynomial at the shared point to check value
+  const mle4 = (v, r) => v[0]*(1-r[0])*(1-r[1]) + v[1]*(1-r[0])*r[1] + v[2]*r[0]*(1-r[1]) + v[3]*r[0]*r[1];
+  const rShared = foldState.rShared;
+  const evalCheck = mle4(fC, rShared);
+
+  document.getElementById('fold-alpha').textContent = alpha;
+  document.getElementById('fold-combined-f').textContent = `[${fC.map(v=>v.toFixed(0)).join(', ')}]`;
+  document.getElementById('fold-combined-cm').textContent = cmC;
+  document.getElementById('fold-combined-v').textContent = vC.toFixed(3);
+
+  // Show what was corrupted
+  const attackEl = document.getElementById('fold-attack');
+  if (mode === 'tamper-poly') {
+    attackEl.innerHTML = `<span class="val pink">Tampered:</span> f<sub>2</sub>[0] changed from ${f2[0]} to ${f2[0]+5} (commitment NOT updated)`;
+    attackEl.style.display = 'block';
+  } else if (mode === 'lie-value') {
+    attackEl.innerHTML = `<span class="val pink">Lied:</span> claimed v<sub>2</sub> = ${v2_claimed.toFixed(3)} (real value is ${v2.toFixed(3)}, off by 3)`;
+    attackEl.style.display = 'block';
+  } else {
+    attackEl.style.display = 'none';
+  }
+
+  const cmOk = cmCheck === cmC;
+  const valOk = Math.abs(evalCheck - vC) < 0.001;
+
+  const el = document.getElementById('fold-verify');
+  el.className = 'result-box ' + (cmOk && valOk ? 'pass' : 'fail');
+  el.innerHTML =
+    `${cmOk ? '\u2713' : '\u2717'} Commitment check: commit(f) = ${cmCheck} ${cmOk ? '=' : '\u2260'} ${cmC} = cm_folded ${cmOk ? '\u2714' : '\u2717'}<br>` +
+    `${valOk ? '\u2713' : '\u2717'} Evaluation check: MLE(f)(r*) = ${evalCheck.toFixed(3)} ${valOk ? '=' : '\u2260'} ${vC.toFixed(3)} = claimed ${valOk ? '\u2714' : '\u2717'}`;
+  if (!cmOk && !valOk) {
+    el.innerHTML += `<br><span class="text-dim">Tampering breaks both checks. This is what happens to a prover who rigged every sumcheck round &mdash; at the final reveal, their polynomial doesn't match the commitment they locked in at the start.</span>`;
+  } else if (!valOk) {
+    el.innerHTML += `<br><span class="text-dim">The polynomial is genuine (commitment matches), but the claimed value was a lie.</span>`;
+  }
+
+  document.getElementById('fold-result').style.display = 'block';
+}
+
+document.getElementById('btn-fold').addEventListener('click', () => doFold('honest'));
+document.getElementById('btn-fold-corrupt-poly').addEventListener('click', () => doFold('tamper-poly'));
+document.getElementById('btn-fold-corrupt-val').addEventListener('click', () => doFold('lie-value'));
+
+// ========================
+// PIPELINE TRACER
+// ========================
+// Concrete 2x2 example traced end-to-end
+const PIPE = {
+  A: [[1,3],[2,4]],
+  B: [[5,7],[6,8]],
+  c1: 0.4, c3: 0.7,
+  sc_r: 0.6, // sumcheck challenge
+  fold_alpha: [3, 7], // weights for folding 3 claims
+};
+
+// Precompute everything
+PIPE.C = matMul(PIPE.A, PIPE.B); // [[23,31],[34,46]]
+PIPE.cmA = mod(1+3+2+4, P); // 10
+PIPE.cmB = mod(5+7+6+8, P); // 26
+PIPE.cmC = mod(PIPE.C[0][0]+PIPE.C[0][1]+PIPE.C[1][0]+PIPE.C[1][1], P); // 37
+
+// MLE helpers for 2x2
+function mle2x2(m, x0, x1) {
+  return m[0][0]*(1-x0)*(1-x1) + m[0][1]*(1-x0)*x1
+       + m[1][0]*x0*(1-x1) + m[1][1]*x0*x1;
+}
+
+// After Freivalds: fix row of A with c1, col of B with c3
+// A'(j) = MLE_A(c1, j) = A(c1,0)*(1-j) + A(c1,1)*j
+PIPE.A_at_c1_0 = mle2x2(PIPE.A, PIPE.c1, 0); // 1.4
+PIPE.A_at_c1_1 = mle2x2(PIPE.A, PIPE.c1, 1); // 3.4
+// B'(j) = MLE_B(j, c3)
+PIPE.B_at_c3_0 = mle2x2(PIPE.B, 0, PIPE.c3); // 6.4
+PIPE.B_at_c3_1 = mle2x2(PIPE.B, 1, PIPE.c3); // 7.4
+// C' = MLE_C(c1, c3)
+PIPE.C_val = mle2x2(PIPE.C, PIPE.c1, PIPE.c3); // 34.12
+
+// Sumcheck: prove sum_{j in {0,1}} A'(j)*B'(j) = C'
+PIPE.sc_sum_0 = PIPE.A_at_c1_0 * PIPE.B_at_c3_0; // 8.96
+PIPE.sc_sum_1 = PIPE.A_at_c1_1 * PIPE.B_at_c3_1; // 25.16
+PIPE.sc_total = PIPE.sc_sum_0 + PIPE.sc_sum_1; // 34.12
+
+// p(X) = A'(X)*B'(X) where A'(X)=1.4+2.0X, B'(X)=6.4+1.0X
+// = 8.96 + 14.2X + 2.0X^2
+PIPE.sc_p_const = PIPE.A_at_c1_0 * PIPE.B_at_c3_0;
+PIPE.sc_p_at_r = (PIPE.A_at_c1_0 + (PIPE.A_at_c1_1-PIPE.A_at_c1_0)*PIPE.sc_r) *
+                 (PIPE.B_at_c3_0 + (PIPE.B_at_c3_1-PIPE.B_at_c3_0)*PIPE.sc_r);
+
+// Linear claims
+PIPE.lc_A_val = PIPE.A_at_c1_0 + (PIPE.A_at_c1_1-PIPE.A_at_c1_0)*PIPE.sc_r; // MLE_A(0.4, 0.6) = 2.6
+PIPE.lc_B_val = PIPE.B_at_c3_0 + (PIPE.B_at_c3_1-PIPE.B_at_c3_0)*PIPE.sc_r; // MLE_B(0.6, 0.7) = 7.0
+
+// Fold
+const [a1, a2] = PIPE.fold_alpha;
+PIPE.fold_val = PIPE.lc_A_val + a1*PIPE.lc_B_val + a2*PIPE.C_val;
+PIPE.fold_cm = mod(PIPE.cmA + a1*PIPE.cmB + a2*PIPE.cmC, P);
+
+let pipeStep = -1;
+const pipeSteps = [
+  // Step 0: Input
+  () => `<div class="card" style="border-color:var(--accent-cyan)">
+    <h3 style="color:var(--accent-cyan)">Step 1: Input &amp; Commit</h3>
+    <p class="text-small">Prover submits the matrices. They are padded to power-of-2 dimensions, blinding rows added, and Ajtai commitments computed.</p>
+    <div class="matrix-container">
+      <div><div class="matrix" style="grid-template-columns:repeat(2,48px)">
+        ${PIPE.A.flat().map(v=>`<div class="matrix-cell">${v}</div>`).join('')}
+      </div><div class="matrix-label">A</div></div>
+      <span class="op-symbol">&times;</span>
+      <div><div class="matrix orange" style="grid-template-columns:repeat(2,48px)">
+        ${PIPE.B.flat().map(v=>`<div class="matrix-cell">${v}</div>`).join('')}
+      </div><div class="matrix-label">B</div></div>
+      <span class="op-symbol">=</span>
+      <div><div class="matrix green" style="grid-template-columns:repeat(2,48px)">
+        ${PIPE.C.flat().map(v=>`<div class="matrix-cell">${v}</div>`).join('')}
+      </div><div class="matrix-label">C = A&times;B</div></div>
+    </div>
+    <div class="equation" style="font-size:var(--fs-sm)">Toy commitments (sum mod 97): cm<sub>A</sub> = <span class="eq-highlight">${PIPE.cmA}</span>, cm<sub>B</sub> = <span class="eq-orange">${PIPE.cmB}</span>, cm<sub>C</sub> = <span class="eq-green">${PIPE.cmC}</span></div>
+    <p class="text-small text-dim">The verifier only sees these three commitment values. The matrices stay private.</p>
+    <p class="text-small" style="color:var(--accent-cyan)"><strong>What got smaller:</strong> full matrices &rarr; opaque commitment vectors</p>
+  </div>`,
+
+  // Step 1: Freivalds
+  () => `<div class="card" style="border-color:var(--accent-orange)">
+    <h3 style="color:var(--accent-orange)">Step 2: Freivalds' Reduction (MLE variant)</h3>
+    <p class="text-small">Random challenges c<sub>row</sub> = <span class="val orange">${PIPE.c1}</span>, c<sub>col</sub> = <span class="val orange">${PIPE.c3}</span> derived by hashing the commitments.</p>
+    <p class="text-small">Pin A's row dimension at c<sub>row</sub>=${PIPE.c1} (evaluate the MLE, collapsing the row variables):</p>
+    <div class="equation" style="font-size:var(--fs-sm)">A&prime;(j) = MLE<sub>A</sub>(${PIPE.c1}, j) = ${PIPE.A_at_c1_0.toFixed(1)}&middot;(1-j) + ${PIPE.A_at_c1_1.toFixed(1)}&middot;j = <span class="eq-highlight">${PIPE.A_at_c1_0.toFixed(1)} + ${(PIPE.A_at_c1_1-PIPE.A_at_c1_0).toFixed(1)}j</span></div>
+    <p class="text-small">Fix B's column dimension at c<sub>3</sub>=${PIPE.c3}:</p>
+    <div class="equation" style="font-size:var(--fs-sm)">B&prime;(j) = MLE<sub>B</sub>(j, ${PIPE.c3}) = ${PIPE.B_at_c3_0.toFixed(1)}&middot;(1-j) + ${PIPE.B_at_c3_1.toFixed(1)}&middot;j = <span class="eq-orange">${PIPE.B_at_c3_0.toFixed(1)} + ${(PIPE.B_at_c3_1-PIPE.B_at_c3_0).toFixed(1)}j</span></div>
+    <p class="text-small">Evaluate C at both:</p>
+    <div class="equation" style="font-size:var(--fs-sm)">C&prime; = MLE<sub>C</sub>(${PIPE.c1}, ${PIPE.c3}) = <span class="eq-green">${PIPE.C_val.toFixed(2)}</span></div>
+    <p class="text-small mt-1"><strong>The claim is now:</strong> &sum;<sub>j&isin;{0,1}</sub> A&prime;(j)&middot;B&prime;(j) = C&prime; &mdash; a dot product over the inner dimension.</p>
+    <p class="text-small" style="color:var(--accent-cyan)"><strong>What got smaller:</strong> matrix equation (n&sup2; entries) &rarr; dot product (n terms)</p>
+  </div>`,
+
+  // Step 2: Verify the dot product
+  () => `<div class="card" style="border-color:var(--accent-purple)">
+    <h3 style="color:var(--accent-purple)">Step 3: Sanity Check (not part of the real protocol)</h3>
+    <p class="text-small">For this tiny example we <em>can</em> check the sum directly. In the real protocol, this step is replaced by sumcheck:</p>
+    <div class="equation" style="font-size:var(--fs-sm)">j=0: A&prime;(0)&middot;B&prime;(0) = ${PIPE.A_at_c1_0.toFixed(1)} &times; ${PIPE.B_at_c3_0.toFixed(1)} = <span class="eq-highlight">${PIPE.sc_sum_0.toFixed(2)}</span>
+j=1: A&prime;(1)&middot;B&prime;(1) = ${PIPE.A_at_c1_1.toFixed(1)} &times; ${PIPE.B_at_c3_1.toFixed(1)} = <span class="eq-highlight">${PIPE.sc_sum_1.toFixed(2)}</span>
+Sum = ${PIPE.sc_sum_0.toFixed(2)} + ${PIPE.sc_sum_1.toFixed(2)} = <span class="eq-green">${PIPE.sc_total.toFixed(2)}</span> = C&prime; &nbsp; <span class="eq-green">\u2713</span></div>
+    <p class="text-small text-dim">In the real system, the verifier can't enumerate all j &mdash; the inner dimension could be 4096. Sumcheck proves this sum without checking every term.</p>
+  </div>`,
+
+  // Step 3: Sumcheck
+  () => {
+    const A0 = PIPE.A_at_c1_0, A1 = PIPE.A_at_c1_1, B0 = PIPE.B_at_c3_0, B1 = PIPE.B_at_c3_1;
+    const r = PIPE.sc_r;
+    // p(X) = (A0 + (A1-A0)X)(B0 + (B1-B0)X)
+    const c0 = A0*B0;
+    const c1_coeff = A0*(B1-B0) + (A1-A0)*B0;
+    const c2_coeff = (A1-A0)*(B1-B0);
+    const p0 = c0;
+    const p1 = c0 + c1_coeff + c2_coeff;
+    const pr = c0 + c1_coeff*r + c2_coeff*r*r;
+    const Ar = A0 + (A1-A0)*r;
+    const Br_val = B0 + (B1-B0)*r;
+    return `<div class="card" style="border-color:var(--accent-cyan)">
+    <h3 style="color:var(--accent-cyan)">Step 4: Sumcheck (1 round &mdash; inner dimension = 2)</h3>
+    <p class="text-small">Prover evaluates A&prime; and B&prime; at three points (degree 2 needs d+1=3), multiplies pointwise, sends the results:</p>
+    <div class="equation" style="font-size:var(--fs-sm)">  A&prime;(0) &middot; B&prime;(0) = ${A0.toFixed(1)} &times; ${B0.toFixed(1)} = <span class="eq-highlight">p(0) = ${p0.toFixed(2)}</span>
+  A&prime;(1) &middot; B&prime;(1) = ${A1.toFixed(1)} &times; ${B1.toFixed(1)} = <span class="eq-highlight">p(1) = ${p1.toFixed(2)}</span>
+  A&prime;(2) &middot; B&prime;(2) = ${(A0+2*(A1-A0)).toFixed(1)} &times; ${(B0+2*(B1-B0)).toFixed(1)} = <span class="eq-highlight">p(2) = ${(c0 + c1_coeff*2 + c2_coeff*4).toFixed(2)}</span></div>
+    <p class="text-small"><span class="val purple">Verifier checks:</span> p(0) + p(1) = ${p0.toFixed(2)} + ${p1.toFixed(2)} = <span class="val green">${(p0+p1).toFixed(2)}</span> = claimed sum ${PIPE.C_val.toFixed(2)} &nbsp;<span class="val green">\u2713</span></p>
+    <p class="text-small"><span class="val orange">Verifier interpolates &amp; picks random:</span> r = ${r} &rarr; p(${r}) = <span class="val cyan">${pr.toFixed(2)}</span></p>
+    <p class="text-small"><span class="val purple">Final check:</span> A&prime;(${r})&middot;B&prime;(${r}) = ${Ar.toFixed(1)} &times; ${Br_val.toFixed(1)} = <span class="val green">${pr.toFixed(2)}</span> &nbsp;<span class="val green">\u2713</span></p>
+    <p class="text-small text-dim mt-1">This toy example has degree 2 (3 evaluation points). With an inner dimension of 4096 and the mask (degree 3), it would be 13 rounds of 4 evaluation points each = 52 field elements.</p>
+    <p class="text-small" style="color:var(--accent-cyan)"><strong>What got smaller:</strong> sum over 2<sup>k</sup> terms &rarr; logarithmic transcript (k round polynomials)</p>
+  </div>`;
+  },
+
+  // Step 4: Linear Claims
+  () => `<div class="card" style="border-color:var(--accent-green)">
+    <h3 style="color:var(--accent-green)">Step 5: Extract Linear Claims</h3>
+    <p class="text-small">The sumcheck's final check required evaluating MLE<sub>A</sub>, MLE<sub>B</sub>, and MLE<sub>C</sub> at specific points.
+    The verifier doesn't have any of the three matrices (not even C &mdash; it only has the commitment to C).
+    So all three evaluations become LinearClaims:</p>
+    <div class="round-display">
+      <div class="round active">
+        <div class="round-header"><span class="round-num">Claim for A</span></div>
+        <div class="text-small">commit = <span class="val cyan">${PIPE.cmA}</span>, point = (${PIPE.c1}, ${PIPE.sc_r}), value = MLE<sub>A</sub>(${PIPE.c1}, ${PIPE.sc_r}) = <span class="val cyan">${PIPE.lc_A_val.toFixed(1)}</span></div>
+      </div>
+      <div class="round active">
+        <div class="round-header"><span class="round-num">Claim for B</span></div>
+        <div class="text-small">commit = <span class="val orange">${PIPE.cmB}</span>, point = (${PIPE.sc_r}, ${PIPE.c3}), value = MLE<sub>B</sub>(${PIPE.sc_r}, ${PIPE.c3}) = <span class="val orange">${PIPE.lc_B_val.toFixed(1)}</span></div>
+      </div>
+      <div class="round active">
+        <div class="round-header"><span class="round-num">Claim for C</span></div>
+        <div class="text-small">commit = <span class="val green">${PIPE.cmC}</span>, point = (${PIPE.c1}, ${PIPE.c3}), value = MLE<sub>C</sub>(${PIPE.c1}, ${PIPE.c3}) = <span class="val green">${PIPE.C_val.toFixed(2)}</span></div>
+      </div>
+    </div>
+    <p class="text-small text-dim">Each says: "my committed polynomial evaluates to this value at this point." The polynomial itself stays private. With limb decomposition, a single matmul can produce more claims (A_limbs + B_limbs + C_limbs).</p>
+    <p class="text-small" style="color:var(--accent-cyan)"><strong>What got smaller:</strong> polynomial evaluation problem &rarr; three compact (commitment, point, value) tuples</p>
+  </div>`,
+
+  // Step 5: Fold
+  () => `<div class="card" style="border-color:var(--accent-pink)">
+    <h3 style="color:var(--accent-pink)">Step 6: Fold 3 Claims &rarr; 1</h3>
+    <p class="text-small">
+      The three claims have different evaluation points: (${PIPE.c1}, ${PIPE.sc_r}), (${PIPE.sc_r}, ${PIPE.c3}), (${PIPE.c1}, ${PIPE.c3}).
+      SymphonyFold runs a unifying sumcheck that simultaneously aligns all three to a common random point
+      and produces the folded claim &mdash; alignment and folding in one pass.
+    </p>
+    <p class="text-small">
+      The commitment folding uses the additive homomorphism (this part works regardless of points):
+    </p>
+    <div class="equation" style="font-size:var(--fs-sm)">Folded commit = cm<sub>A</sub> + &alpha;<sub>1</sub>&middot;cm<sub>B</sub> + &alpha;<sub>2</sub>&middot;cm<sub>C</sub>
+             = ${PIPE.cmA} + ${a1}&middot;${PIPE.cmB} + ${a2}&middot;${PIPE.cmC}
+             = <span class="eq-green">(${PIPE.cmA + a1*PIPE.cmB + a2*PIPE.cmC}) mod 97 = ${PIPE.fold_cm}</span>
+
+with &alpha;<sub>1</sub>=${a1}, &alpha;<sub>2</sub>=${a2} (random weights)</div>
+    <p class="text-small">
+      The verifier also computes the expected folded value from the individual claimed values:
+    </p>
+    <div class="equation" style="font-size:var(--fs-sm)">Folded value = v<sub>A</sub> + &alpha;<sub>1</sub>&middot;v<sub>B</sub> + &alpha;<sub>2</sub>&middot;v<sub>C</sub>
+             = ${PIPE.lc_A_val.toFixed(1)} + ${a1}&middot;${PIPE.lc_B_val.toFixed(1)} + ${a2}&middot;${PIPE.C_val.toFixed(2)}
+             = <span class="eq-green">${PIPE.fold_val.toFixed(2)}</span></div>
+    <p class="text-small">
+      Now the prover reveals the folded polynomial. The verifier runs two checks:
+    </p>
+    <p class="text-small">
+      &bull; <strong>Commitment check:</strong> recompute commitment from the revealed polynomial &rarr;
+      does it equal <span class="val green">${PIPE.fold_cm}</span>?<br>
+      &bull; <strong>Evaluation check:</strong> evaluate the revealed polynomial at the common point &rarr;
+      does it equal <span class="val green">${PIPE.fold_val.toFixed(2)}</span>?
+    </p>
+    <p class="text-small">
+      If both pass, all three original claims are validated. One reveal, two checks, three matrices proved.
+    </p>
+    <div class="result-box pass mt-1" style="font-size:var(--fs-sm)">\u2713 3 claims &rarr; 1 folded claim. In a full model, thousands of claims fold down to a handful via repeated arity-32 folding on worker GPUs.</div>
+    <p class="text-small" style="color:var(--accent-cyan)"><strong>What got smaller:</strong> three evaluation claims &rarr; one folded claim (one reveal, two checks)</p>
+    <p class="text-small text-dim mt-1"><strong>The proof is complete.</strong> The verifier re-derives all challenges by hashing the same public data, checks each sumcheck round, and verifies the final folded claim. No matrix data was revealed.</p>
+  </div>`,
+];
+
+function renderPipeStep() {
+  const container = document.getElementById('pipe-trace');
+  document.getElementById('pipe-step-label').textContent = `Step ${pipeStep+1} / ${pipeSteps.length}`;
+  if (pipeStep < 0) { container.innerHTML = '<p class="text-dim text-small">Click "Next Step" to begin.</p>'; return; }
+  // Build all steps up to current
+  let html = '';
+  for (let i = 0; i <= pipeStep; i++) {
+    const fn = pipeSteps[i];
+    html += typeof fn === 'function' ? fn() : fn;
+  }
+  container.innerHTML = html;
+  // Disable next button when done
+  document.getElementById('btn-pipe-next').disabled = pipeStep >= pipeSteps.length - 1;
+}
+
+document.getElementById('btn-pipe-next').addEventListener('click', () => {
+  if (pipeStep < pipeSteps.length - 1) { pipeStep++; renderPipeStep(); }
+});
+
+document.getElementById('btn-pipe-reset').addEventListener('click', () => {
+  pipeStep = -1;
+  document.getElementById('btn-pipe-next').disabled = false;
+  renderPipeStep();
+});
+
+renderPipeStep();
+
+// === Scroll reveal: gently rise blocks into view ===
+(function(){
+  if (!('IntersectionObserver' in window)) return;
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var sel = [
+    'section:not(#hero) > h1',
+    'section:not(#hero) > .lead',
+    'section:not(#hero) > .state-box',
+    'section:not(#hero) > h3',
+    'section:not(#hero) > .equation',
+    'section:not(#hero) > .key-insight',
+    '.card', '.sandbox', '.challenge'
+  ].join(', ');
+  var targets = document.querySelectorAll(sel);
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if (e.isIntersecting){ e.target.classList.add('in-view'); io.unobserve(e.target); }
+    });
+  }, { rootMargin: '0px 0px -8% 0px', threshold: 0.04 });
+  targets.forEach(function(el){ el.classList.add('reveal'); io.observe(el); });
+})();
+</script>
+</body>
+</html>
