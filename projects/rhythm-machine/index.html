@@ -156,6 +156,24 @@
   .presets { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
   .presets button { padding: 8px 13px; font-size: 13px; font-weight: 450; }
   .meta { color: var(--muted); font-size: 12px; margin-top: 14px; }
+
+  /* Mobile / narrow screens */
+  @media (max-width: 640px) {
+    .wrap { padding: 16px 12px 44px; }
+    .panel { padding: 15px 13px; border-radius: 12px; margin-bottom: 14px; }
+    h1 { font-size: 20px; }
+    .sub-title { font-size: 13px; }
+    .bpm-display { font-size: 26px; min-width: 70px; }
+    .controls { gap: 9px; }
+    .controls > button { flex: 1 1 42%; }   /* roomy two-up touch targets */
+    button { padding: 12px 14px; }
+    .presets button { flex: 1 1 42%; padding: 11px 10px; }
+    #viz { gap: 9px; }
+    .beat { min-width: 60px; padding: 11px 7px 9px; }
+    .pulse { width: 15px; height: 15px; }
+    .pulses { gap: 6px; }
+    .stat { display: block; margin-right: 0; margin-bottom: 2px; }
+  }
 </style>
 </head>
 <body>
@@ -191,7 +209,9 @@
     </div>
     <div class="controls" style="margin-top:18px;">
       <button id="play" class="primary">▶ Play</button>
+      <button id="restart" class="ghost">↺ Restart</button>
       <button id="tap" class="ghost">Tap tempo</button>
+      <label class="toggle"><input type="checkbox" id="readyCount" checked> Ready countdown</label>
       <label class="toggle"><input type="checkbox" id="countin"> Count-in (1 beat, mirrors beat 1)</label>
       <label class="toggle"><input type="checkbox" id="subsAudible" checked> Click subdivisions</label>
       <label class="toggle">Sound
@@ -255,6 +275,7 @@
 
 let audioCtx = null;
 let noiseBuffer = null;
+let audioUnlocked = false;
 function ensureAudio() {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -265,6 +286,17 @@ function ensureAudio() {
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
   }
   if (audioCtx.state === "suspended") audioCtx.resume();
+  // iOS Safari gates Web Audio behind a user gesture: playing one silent sample
+  // inside a tap "unlocks" the context so later scheduled clicks actually sound.
+  if (!audioUnlocked) {
+    try {
+      const src = audioCtx.createBufferSource();
+      src.buffer = audioCtx.createBuffer(1, 1, 22050);
+      src.connect(audioCtx.destination);
+      src.start(0);
+      audioUnlocked = true;
+    } catch (e) {}
+  }
   return audioCtx;
 }
 
@@ -408,7 +440,10 @@ let currentPulse = 0;     // index into pulses[]
 let nextNoteTime = 0;     // audio-clock time of the next pulse
 let countInQueue = []; // sub-pulses of the count-in beat (copies beat 1's structure)
 let countInIdx = 0;
+let leadInQueue = []; // get-ready countdown ticks (3·2·1) before the count-in
+let leadInIdx = 0;
 let timerId = null;
+const READY_TICK = 0.85; // seconds per get-ready countdown tick (tempo-independent)
 
 const LOOKAHEAD = 25;        // ms — how often the scheduler wakes
 const SCHEDULE_AHEAD = 0.12; // s  — how far ahead we book audio
@@ -437,6 +472,12 @@ function pulseDuration(p) {
 }
 
 function advance() {
+  if (leadInIdx < leadInQueue.length) {
+    // Get-ready countdown ticks at a fixed pace, independent of tempo.
+    nextNoteTime += READY_TICK;
+    leadInIdx++;
+    return;
+  }
   if (countInIdx < countInQueue.length) {
     // Count-in sub-pulses subdivide one beat, copying beat 1's structure.
     const cp = countInQueue[countInIdx];
@@ -451,7 +492,10 @@ function advance() {
 
 function scheduler() {
   while (nextNoteTime < audioCtx.currentTime + SCHEDULE_AHEAD) {
-    if (countInIdx < countInQueue.length) {
+    if (leadInIdx < leadInQueue.length) {
+      click(nextNoteTime, 1); // audible "get ready" tick
+      drawQueue.push({ ready: leadInQueue[leadInIdx], time: nextNoteTime });
+    } else if (countInIdx < countInQueue.length) {
       const cp = countInQueue[countInIdx];
       if (cp.sound) click(nextNoteTime, cp.level);
       drawQueue.push({ countIn: true, dotIndex: cp.idxInBeat, sound: cp.sound, level: cp.level, first: cp.first, time: nextNoteTime });
@@ -495,6 +539,9 @@ function start() {
     });
   }
   countInIdx = 0;
+  // Get-ready countdown (3·2·1) gives time to set hands before it starts.
+  leadInQueue = document.getElementById("readyCount").checked ? [3, 2, 1] : [];
+  leadInIdx = 0;
   drawQueue = [];
   measureStarts = [];
   measureCount = 0;
@@ -822,6 +869,7 @@ function draw() {
   const now = audioCtx.currentTime;
   while (drawQueue.length && drawQueue[0].time <= now) {
     const ev = drawQueue.shift();
+    if (ev.ready !== undefined) { showCountdown(ev.ready); continue; } // 3·2·1 get-ready
     if (ev.countIn) {
       if (ev.first) showCountdown("1"); // steady "1" for the whole count-in beat
       clearActivePulses();              // preview beat 1's dots as the count-in plays through them
@@ -889,6 +937,14 @@ function setPlayButton(playing) {
 document.getElementById("play").addEventListener("click", () => {
   if (isPlaying) stop(); else start();
 });
+
+// Restart from the top in one click (re-runs the get-ready countdown).
+function restart() { stop(); start(); }
+document.getElementById("restart").addEventListener("click", restart);
+
+// Warm up / unlock audio on the first interaction anywhere (esp. iOS Safari).
+["touchend", "mousedown", "keydown"].forEach(evt =>
+  window.addEventListener(evt, () => ensureAudio(), { once: true }));
 
 const tempoEl = document.getElementById("tempo");
 tempoEl.addEventListener("input", () => {
@@ -984,7 +1040,7 @@ document.getElementById("playback").addEventListener("click", () => {
 // ───────────────────── Persist settings across sessions ─────────────────────
 const SETTINGS_KEY = "rhythm-machine-settings-v1";
 const SAVED_VALUES = ["pattern", "tempo", "vol", "timbre", "sens"];
-const SAVED_CHECKS = ["countin", "subsAudible"];
+const SAVED_CHECKS = ["countin", "subsAudible", "readyCount"];
 
 function saveSettings() {
   const s = {};
