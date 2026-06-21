@@ -1291,8 +1291,10 @@ Multiply pointwise at each X:
     be wrong &mdash; same principle as sumcheck. It's a 1-round sumcheck on a 1-dimensional hypercube.
   </p>
   <p>
-    After doing this for each polynomial, all claims are at the common point <span class="m">r*</span>
-    and folding proceeds normally:
+    After doing this for each polynomial, each one has a trusted value at <span class="m">r*</span>
+    (the <span class="m">g(1)</span> read off its line), so the folded value
+    <span class="m">f(r*) + &alpha;&middot;h(r*)</span> is a clean linear combination at the shared point
+    <span class="m">r*</span> and folding proceeds normally:
   </p>
   <div class="equation" style="font-size:var(--fs-sm)">commit: cm<sub>f</sub> + &alpha;&middot;cm<sub>h</sub>  &nbsp; <span class="eq-green">&check;</span> linear combo of commitments
 point:  <span class="eq-orange">r*</span>  &nbsp; <span class="eq-green">&check;</span> one shared point
