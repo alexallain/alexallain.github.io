@@ -12,7 +12,7 @@ A short summary of stuff I've done, roughly reverse chronologically:
 * Hands on work with 0xPARC and now the Field Extension Institute, trying to figure out how to use techniques from
 recent cryptography advances to make the world work better for specific versions of better that tend to have a flavor of
 'make it possible to coordinate more easily in high trust ways on hard problems'. One recent example is working on
-verifiable inference for LLMs.
+verifiable inference for LLMs. (I wrote about this work in my [report from the field (extension institute)]({% post_url 2026-06-22-report-from-the-field %}).)
 * Various management/exec coaching projects, which I enjoy because people seem to find it helpful to talk to me about
 tricky problems, and I like helping people think their best thoughts.
 * Instructor and course creator at Reforge on Technical Foundations for Product Management, which I worked on with my
