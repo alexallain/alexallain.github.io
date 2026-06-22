@@ -93,12 +93,16 @@ More generally, I began to see my own ability to understand as many of the layer
 Three things that I found helpful for that were:
 
 * With some prompting, Claude makes an excellent tutor and coach: for example, being very clear that I wanted Claude to look for any ambiguity in my responses tilted it from "oh sure, what you said, if we interpret it just right, sounds basically true" to the steel trap mind I want when evaluating my vague or vibes-y responses ("well, what you said there, interpreted normally, is probably correct, but did you *really* understand the specific thing--can you elaborate on that detail?")  
-* Having Claude build interactive examples and explainers was also quite useful (and fun!) I found that this did take more rounds of iteration than I expected though. Lots of little details matter. (You can look at [one example here](https://alexallain.com/projects/matmul-proof-explorer/).)  
+* Having Claude build interactive examples and explainers was also quite useful (and fun!) I found that this did take
+* more rounds of iteration than I expected though. Lots of little details matter.  
 * Finally, I also found having Claude run experiments to be a great way to build intuition around empirical questions. The more I got into thinking about the truly unanswered questions (like "how to deal with the fact that hardware is moving to fast paths for floating point matrix multiplies") the more I appreciated the ability to just run all sorts of experiments at high velocity with Claude where the limiting step would previously have been rapidly churning out code.
 
 One warning on the last one: it's seductively easy to reach a (tentative) conclusion based on an experiment without
 inspecting the details, but I found that those details often would matter a lot (see the example up above about not
 optimizing Freivalds'). On the other hand, this still felt far faster than hand implementation because taking time to understand the experiments in detail often led to useful learnings while I still avoided a lot of boilerplate implementation. I do think the fact that [reality has a surprising amount of detail](https://johnsalvatier.org/blog/2017/reality-has-a-surprising-amount-of-detail) does act as a bit of a speed limit here though.
+
+> If you're interested in more deeply understanding the cryptography behind this, you can go to this [interactive explainer
+of a matmul proof](https://alexallain.com/projects/matmul-proof-explorer/) I had Claude create for me as part of that learning.
 
 Okay, so I learned a lot--but, to what end?
 
